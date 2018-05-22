@@ -145,17 +145,28 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
 
     double omega_MASS   = 0.78265;
     double omega_WIDTH  = 0.00849;
-    double omega_amp    = 10.0;
-    double omega_phase  = 20*M_PI/180.0;
+    double omega_amp    = 1.0;
+    double omega_phase  = 0.0;
 
     double f2_MASS     = 1.2755;
     double f2_WIDTH    = 0.1867;
-    double f2_amp      = 15.0;
-    double f2_phase    = 30*M_PI/180.0;
+    double f2_amp      = 1.0;
+    double f2_phase    = 0.0;
+
+    double sigma_MASS  = 0.480;
+    double sigma_WIDTH = 0.350;
+    double sigma_amp   = 1.0;
+    double sigma_phase = 0.0;
+
+    double f0_MASS     = 0.965;
+    double f0_GPP      = 0.165;
+    double f0_GKK      = 4.21*f0_GPP;
+    double f0_amp      = 2.0;
+    double f0_phase    = 0.0;
 
     //rho(770)
-    Variable v_rho_Mass("rho_MASS",rho_MASS,0.00025,rho_MASS*0.95,rho_MASS*1.1);
-    Variable v_rho_Width("rho_WIDTH",rho_WIDTH,0.0009,rho_WIDTH*0.95,rho_WIDTH*1.1);
+    Variable v_rho_Mass("rho_MASS",rho_MASS);
+    Variable v_rho_Width("rho_WIDTH",rho_WIDTH);
     Variable v_rho_amp_real("rho_amp_real",rho_amp*cos(rho_phase));
     Variable v_rho_amp_img("rho_amp_img",rho_amp*sin(rho_phase));
 
@@ -165,14 +176,27 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     //omega(782)
     Variable v_omega_Mass("omega_MASS",omega_MASS);
     Variable v_omega_Width("omega_WIDTH",omega_WIDTH);
-    Variable v_omega_amp_real("omega_amp_real",omega_amp*cos(omega_phase),0.001, -100, +100);
-    Variable v_omega_amp_img("omega_amp_img",omega_amp*sin(omega_phase),0.001, -100, +100);
+    Variable v_omega_amp_real("omega_amp_real",omega_amp*cos(omega_phase),0.01,-100,+100);
+    Variable v_omega_amp_img("omega_amp_img",omega_amp*sin(omega_phase),0.01,-100,+100);
 
     //f2(1270)
     Variable v_f2_Mass("f2_MASS",f2_MASS);
     Variable v_f2_Width("f2_WIDTH",f2_WIDTH);
-    Variable v_f2_amp_real("f2_amp_real",f2_amp*cos(f2_phase),0.001, -100, +100);
-    Variable v_f2_amp_img("f2_amp_img",f2_amp*sin(f2_phase),0.001, -100, +100);
+    Variable v_f2_amp_real("f2_amp_real",f2_amp*cos(f2_phase),0.01,-100,+100);
+    Variable v_f2_amp_img("f2_amp_img",f2_amp*sin(f2_phase),0.01,-100,+100);
+
+    //sigma(480)
+    Variable v_sigma_Mass("sigma_MASS",sigma_MASS);
+    Variable v_sigma_Width("sigma_WIDTH",sigma_WIDTH);
+    Variable v_sigma_amp_real("sigma_amp_real",sigma_amp*cos(sigma_phase),0.01,-100,+100);
+    Variable v_sigma_amp_img("sigma_amp_img",sigma_amp*sin(sigma_phase),0.01,-100,+100);
+
+    //f0(980)
+    Variable v_f0_Mass("f0_MASS",f0_MASS);
+    Variable v_f0_GPP("f0_GPP",f0_GPP);
+    Variable v_f0_GKK("f0_GKK",f0_GKK);
+    Variable v_f0_amp_real("f0_amp_real",f0_amp*cos(f0_phase),0.01,-100,+100);
+    Variable v_f0_amp_img("f0_amp_img",f0_amp*sin(f0_phase),0.01,-100,+100);
 
     //NR
 
@@ -180,13 +204,21 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     Variable nonr_amp_imag("nonr_amp_imag", 0.0, 0.001, -100, +100);
 
     //setting resonances
-    ResonancePdf* rho_12 = new Resonances::GS("rho",v_rho_amp_real,v_rho_amp_img,v_rho_Mass,v_rho_Width,(unsigned int)0,PAIR_12);
-    ResonancePdf* rho_13 = new Resonances::GS("rho",v_rho_amp_real,v_rho_amp_img,v_rho_Mass,v_rho_Width,(unsigned int)0,PAIR_13);
+    ResonancePdf* rho_12 = new Resonances::GS("rho",v_rho_amp_real,v_rho_amp_img,v_rho_Mass,v_rho_Width,1,PAIR_12);
+    ResonancePdf* rho_13 = new Resonances::GS("rho",v_rho_amp_real,v_rho_amp_img,v_rho_Mass,v_rho_Width,1,PAIR_13);
 
-    ResonancePdf* omega_12 = new Resonances::GS("omega",v_omega_amp_real,v_omega_amp_img,v_omega_Mass,v_omega_Width,(unsigned int)0,PAIR_12);
-    ResonancePdf* omega_13 = new Resonances::GS("omega",v_omega_amp_real,v_omega_amp_img,v_omega_Mass,v_omega_Width,(unsigned int)0,PAIR_13);
+    ResonancePdf* omega_12 = new Resonances::RBW("omega",v_omega_amp_real,v_omega_amp_img,v_omega_Mass,v_omega_Width,1,PAIR_12);
+    ResonancePdf* omega_13 = new Resonances::RBW("omega",v_omega_amp_real,v_omega_amp_img,v_omega_Mass,v_omega_Width,1,PAIR_13);
 
-    ResonancePdf* f2 = new Resonances::RBW("f2",v_f2_amp_real,v_f2_amp_img,v_f2_Mass,v_f2_Width,(unsigned int)0,PAIR_12,true);
+    ResonancePdf* f2_12 = new Resonances::RBW("f2",v_f2_amp_real,v_f2_amp_img,v_f2_Mass,v_f2_Width,2,PAIR_12);
+    ResonancePdf* f2_13 = new Resonances::RBW("f2",v_f2_amp_real,v_f2_amp_img,v_f2_Mass,v_f2_Width,2,PAIR_13);
+
+    ResonancePdf* sigma_12 = new Resonances::RBW("sigma",v_sigma_amp_real,v_sigma_amp_img,v_sigma_Mass,v_sigma_Width,(unsigned int)0,PAIR_12);
+    ResonancePdf* sigma_13 = new Resonances::RBW("sigma",v_sigma_amp_real,v_sigma_amp_img,v_sigma_Mass,v_sigma_Width,(unsigned int)0,PAIR_13);
+
+    ResonancePdf* f0_12 = new Resonances::FLATTE("f0",v_f0_amp_real,v_f0_amp_img,v_f0_Mass,v_f0_GPP,v_f0_GKK,PAIR_12,false);
+    ResonancePdf* f0_13 = new Resonances::FLATTE("f0",v_f0_amp_real,v_f0_amp_img,v_f0_Mass,v_f0_GPP,v_f0_GKK,PAIR_13,false);
+
     ResonancePdf *nonr = new Resonances::NonRes("nonr", nonr_amp_real, nonr_amp_imag);
 
 
@@ -194,8 +226,13 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     dtoppp.resonances.push_back(rho_13);
     dtoppp.resonances.push_back(omega_12);
     dtoppp.resonances.push_back(omega_13);
-    //dtoppp.resonances.push_back(f2);
-    //dtoppp.resonances.push_back(nonr);
+    dtoppp.resonances.push_back(f2_12);
+    dtoppp.resonances.push_back(f2_13);
+    dtoppp.resonances.push_back(sigma_12);
+    dtoppp.resonances.push_back(sigma_13);
+    dtoppp.resonances.push_back(f0_12);
+    dtoppp.resonances.push_back(f0_13);
+    dtoppp.resonances.push_back(nonr);
 
 
     if(!eff) {
@@ -267,56 +304,6 @@ void PrintFF(std::vector<std::vector<fptype>> ff){
     std::cout << "Sum[i,i]= " << sum << std::endl;
 }
 
-void makeplot(ResonancePdf* comp , GooPdf* eff){
-
-    if(signaldalitz== nullptr){
-        signaldalitz = makesignalpdf(0);
-    }
-
-    DecayInfo3 temp;
-    temp.motherMass  =  signaldalitz->getDecayInfo().motherMass;
-    temp.daug1Mass   =   signaldalitz->getDecayInfo().daug1Mass;
-    temp.daug2Mass   =   signaldalitz->getDecayInfo().daug2Mass;
-    temp.daug3Mass   =   signaldalitz->getDecayInfo().daug3Mass;
-
-    temp.resonances.push_back(comp);
-
-    if(!eff) {
-        // By default create a constant efficiency.
-        vector<Variable> offsets;
-        vector<Observable> observables;
-        vector<Variable> coefficients;
-        Variable constantOne("constantOne", 1);
-        Variable constantZero("constantZero", 0);
-
-        observables.push_back(s12);
-        observables.push_back(s13);
-        offsets.push_back(constantZero);
-        offsets.push_back(constantZero);
-        coefficients.push_back(constantOne);
-        eff = new PolynomialPdf("constantEff", observables, coefficients, offsets, 0); //No efficiency
-    }
-
-    DalitzPlotPdf* signal = new DalitzPlotPdf("signal",s12,s13,eventNumber,temp,eff);
-    ProdPdf* overallsignal = new ProdPdf("overallsignal",{signal});
-
-    Data = new UnbinnedDataSet({s12,s13,eventNumber});
-
-    DalitzPlotter temp_dp((GooPdf*)overallsignal,signal);
-    temp_dp.fillDataSetMC(*Data,10000);
-
-    TH1F hist("hist","",100,s12.getLowerLimit(),s12.getUpperLimit());
-
-    for(size_t i = 0 ; i < Data->getNumEvents(); i++){
-        Data->loadEvent(i);
-        hist.Fill(s12.getValue());
-    }
-
-    TCanvas foo;
-    hist.Draw();
-    foo.SaveAs("plots/test.png");
-
-}
 
 void drawFitPlotsWithPulls(TH1 *hd, TH1 *ht, string plotdir) {
     const char *hname = hd->GetName();
@@ -480,9 +467,17 @@ void runtoyfit(std::string name){
 
     makeToyDalitzPdfPlots(overallsignal);
 
-    //makeplot(signaldalitz->getDecayInfo().resonances.at(0),0);
-
 }
+
+/*void getSWaveAmps(){
+
+    if(signaldalitz == nullptr){
+        signaldalitz = makesignalpdf(0);
+    }
+
+    signaldalitz->getCachedWave()
+
+}*/
 
 int main(int argc, char **argv){
 
