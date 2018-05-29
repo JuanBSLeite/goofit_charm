@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 
-goofit_add_package(CBPF)
+goofit_add_package(CHARM)
 
 goofit_add_executable(D2PPP D2PPP.cu)
 

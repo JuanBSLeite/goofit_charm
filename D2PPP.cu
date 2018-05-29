@@ -71,6 +71,7 @@ std::vector<PdfBase *> comps;
 Variable massSum("massSum", POW2(D_MASS) + POW2(d1_MASS) + POW2(d2_MASS) + POW2(d3_MASS));
 
 //functions
+fptype cpuGetM23(fptype massPZ, fptype massPM) { return (massSum.getValue() - massPZ - massPM); }
 
 DalitzPlotPdf *makesignalpdf(GooPdf *eff = 0);
 
@@ -222,17 +223,17 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     ResonancePdf *nonr = new Resonances::NonRes("nonr", nonr_amp_real, nonr_amp_imag);
 
 
-    dtoppp.resonances.push_back(rho_12);
+    /* dtoppp.resonances.push_back(rho_12);
     dtoppp.resonances.push_back(rho_13);
     dtoppp.resonances.push_back(omega_12);
-    dtoppp.resonances.push_back(omega_13);
-    dtoppp.resonances.push_back(f2_12);
-    dtoppp.resonances.push_back(f2_13);
-    dtoppp.resonances.push_back(sigma_12);
-    dtoppp.resonances.push_back(sigma_13);
+    dtoppp.resonances.push_back(omega_13); */
+    //dtoppp.resonances.push_back(f2_12);
+    //dtoppp.resonances.push_back(f2_13);
+    //dtoppp.resonances.push_back(sigma_12);
+    //dtoppp.resonances.push_back(sigma_13);
     dtoppp.resonances.push_back(f0_12);
-    dtoppp.resonances.push_back(f0_13);
-    dtoppp.resonances.push_back(nonr);
+    //dtoppp.resonances.push_back(f0_13);
+    //dtoppp.resonances.push_back(nonr); 
 
 
     if(!eff) {
@@ -410,7 +411,7 @@ void makeToyDalitzPdfPlots(GooPdf *overallSignal, string plotdir = "plots") {
         dalitzpp0_pdf_hist.Fill(currs12, currs13, pdfValues[0][j]);
         s12_pdf_hist.Fill(currs12, pdfValues[0][j]);
         s13_pdf_hist.Fill(currs13, pdfValues[0][j]);
-        s23_pdf_hist.Fill(cpuGetM23(massSum,currs12, currs13), pdfValues[0][j]);
+        s23_pdf_hist.Fill(cpuGetM23(currs12, currs13), pdfValues[0][j]);
         totalPdf += pdfValues[0][j];
     }
 
@@ -426,7 +427,7 @@ void makeToyDalitzPdfPlots(GooPdf *overallSignal, string plotdir = "plots") {
         double data_s13 = Data->getValue(s13, evt);
         s13_dat_hist.Fill(data_s13);
         dalitzpp0_dat_hist.Fill(data_s12, data_s13);
-        s23_dat_hist.Fill(cpuGetM23(massSum,data_s12, data_s13));
+        s23_dat_hist.Fill(cpuGetM23(data_s12, data_s13));
         totalDat++;
     }
     dalitzpp0_dat_hist.Draw("colz");
@@ -460,6 +461,10 @@ void runtoyfit(std::string name){
     fitter.setVerbosity(3);
 
     auto func_min = fitter.fit();
+
+    signaldalitz->copyParams();
+
+    cout << "Normalization = " << signaldalitz->normalize() << endl;
 
     auto ff = signaldalitz->fit_fractions();
 
