@@ -18,7 +18,7 @@
 // System stuff
 #include <CLI/Timer.hpp>
 #include <fstream>
-
+#include <string>
 
 // GooFit stuff
 #include <goofit/Application.h>
@@ -66,9 +66,17 @@ EventNumber eventNumber("eventNumber");
 
 DalitzPlotPdf* signaldalitz = nullptr;
 UnbinnedDataSet* Data = nullptr;
+
 std::vector<PdfBase *> comps;
+vector<fptype> HH_bin_limits;
+vector<Variable> pwa_coefs_amp;
+vector<Variable> pwa_coefs_phs;
 
 Variable massSum("massSum", POW2(D_MASS) + POW2(d1_MASS) + POW2(d2_MASS) + POW2(d3_MASS));
+
+
+// PWA INPUT FILE NAME
+const string pwa_file = "files/PWACOEFS.txt";
 
 //functions
 fptype cpuGetM23(fptype massPZ, fptype massPM) { return (massSum.getValue() - massPZ - massPM); }
@@ -124,10 +132,54 @@ Data = new UnbinnedDataSet({s12,s13,eventNumber});
     std::cout << "toy data plotted" << '\n';
     std::cout << "toy Generation end!" << '\n';
 
-
-
-
 }
+
+ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = false) {
+
+    std::ifstream reader;
+	//GOOFIT_INFO("LOADING FILE {}",fname);
+    reader.open(fname.c_str());
+    assert(reader.good());
+    HH_bin_limits.clear();
+    pwa_coefs_amp.clear();
+    pwa_coefs_phs.clear();
+
+    double e1, e2, e3;
+    double emag, ephs;
+    int i = 0;
+    while(reader >> e1 >> e2 >> e3) {
+
+        HH_bin_limits.push_back(e1 * e1);
+
+        emag = e2;
+        ephs = e3;
+
+        Variable va(fmt::format("pwa_coef_{}_mag", i), emag, .000001, 0, 10000);
+        Variable vp(fmt::format("pwa_coef_{}_phase", i), ephs, .000001, -360, 360);
+
+        pwa_coefs_amp.push_back(va);
+        pwa_coefs_phs.push_back(vp);
+        i++;
+
+    }
+
+    Variable swave_amp_real("swave_amp_real", 3.0, 0.001, 0, 0);
+    Variable swave_amp_imag("swave_amp_imag", 0.0, 0.001, 0, 0);
+    swave_amp_real.setFixed(true);
+    swave_amp_imag.setFixed(true);
+
+    if(fixAmp) {
+        swave_amp_real.setValue(1.);
+        swave_amp_imag.setValue(0.);
+        swave_amp_real.setFixed(true);
+        swave_amp_imag.setFixed(true);
+    }
+    cout << "Numbers loaded: " << HH_bin_limits.size() << " / " << i << endl;
+
+    ResonancePdf *swave_12 = new Resonances::Spline("swave_12", swave_amp_real, swave_amp_imag, HH_bin_limits, pwa_coefs_amp, pwa_coefs_phs, PAIR_12, false);
+
+    return swave_12;
+} 
 
 DalitzPlotPdf* makesignalpdf(GooPdf* eff){
 
@@ -222,19 +274,21 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
 
     ResonancePdf *nonr = new Resonances::NonRes("nonr", nonr_amp_real, nonr_amp_imag);
 
+    //MIPWA
+    ResonancePdf *swave_12 = loadPWAResonance(pwa_file, false);
 
-    /* dtoppp.resonances.push_back(rho_12);
-    dtoppp.resonances.push_back(rho_13);
-    dtoppp.resonances.push_back(omega_12);
-    dtoppp.resonances.push_back(omega_13); */
+    //dtoppp.resonances.push_back(rho_12);
+    //dtoppp.resonances.push_back(rho_13);
+    //dtoppp.resonances.push_back(omega_12);
+    //dtoppp.resonances.push_back(omega_13);
     //dtoppp.resonances.push_back(f2_12);
     //dtoppp.resonances.push_back(f2_13);
-    //dtoppp.resonances.push_back(sigma_12);
+    dtoppp.resonances.push_back(sigma_12);
     //dtoppp.resonances.push_back(sigma_13);
     dtoppp.resonances.push_back(f0_12);
     //dtoppp.resonances.push_back(f0_13);
     //dtoppp.resonances.push_back(nonr); 
-
+    //dtoppp.resonances.push_back(swave_12);
 
     if(!eff) {
         // By default create a constant efficiency.
