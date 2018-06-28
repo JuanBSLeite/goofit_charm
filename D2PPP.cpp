@@ -541,7 +541,7 @@ void runtoyfit(std::string name){
 
     makeToyDalitzPdfPlots(overallsignal);
 
-    signaldalitz->copyParams();
+    /*signaldalitz->copyParams();
     signaldalitz->normalise();
     thrust::device_vector<fpcomplex> w1 = signaldalitz->getCachedWave(0);
     thrust::device_vector<fpcomplex> w2 = signaldalitz->getCachedWave(1);
@@ -563,7 +563,7 @@ void runtoyfit(std::string name){
     }
 
     wr.close();
-
+    */
 
 }
 

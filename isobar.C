@@ -191,19 +191,19 @@ void isobar(){
     TH1D *h0 = new TH1D("h0","Sigma(480)(BW)",100,s12_min,s12_max);
     h0->SetLineColor(kRed);
     TTree *t = new TTree("t","");
-    t->ReadFile("/mnt/d/Work/GooFit/build/goofit_charm/D2PPP_toy.txt","x:y:z");
+    t->ReadFile("D2PPP_toy.txt","x:y:z");
     t->Draw("y>>h0");
 
     //TH2D *h2 = new TH2D("h2","",100,s12_min,s12_max,100,0,25000);
     //h2->SetMarkerStyle(2);
     TTree *t2 = new TTree("t2","");
-    t2->ReadFile("/mnt/d/Work/GooFit/build/goofit_charm/files/PWACOEFS.txt","x:y:z");
+    t2->ReadFile("files/PWACOEFS.txt","x:y:z");
     
-    //t2->Draw("(y*y + z*z):x>>h2","","*");
+    t2->Draw("(y*y + z*z):x>>h2","","*");
     //t2->Draw("TMath::ATan2(z,y):x>>h2","","*");
     //h1->Draw("L");
     //h1->Draw("L");
-    //h0->Draw("Lsame"); 
+    h0->Draw("Lsame"); 
     //h0->Divide(h1);
     //h0->Fit("Amp","RLL");
     //f1->Draw("same");
