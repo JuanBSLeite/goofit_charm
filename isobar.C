@@ -14,7 +14,7 @@ double d3_MASS  = pi_MASS;
 double s12_min = pow(d1_MASS  + d2_MASS,2);
 double s12_max = pow(D_MASS   - d2_MASS,2);
 
-int slices = 30;
+int slices = 50;
 
 double twoBodyCMmom(double rMassSq, double d1m, double d2m) {
     // For A -> B + C, calculate momentum of B and C in rest frame of A.
@@ -67,21 +67,22 @@ TComplex plainBW(double *x, double *par) {
 
         // RBW evaluation
         double A = (resmass2 - rMassSq);
-        double B = resmass2 * reswidth   /* * pow(measureDaughterMoms / nominalDaughterMoms, 2.0 * spin + 1)  */ * frFactor/ sqrt(rMassSq);
-        double C = 1.0 / (pow(A,2) + pow(B,2));
+        double B = resmass2 * reswidth /* *pow(measureDaughterMoms / nominalDaughterMoms, 2.0 * spin + 1)* frFactor/ sqrt(rMassSq) */;
+        double C = 1.0 / (A*A + B*B);
 
         TComplex ret(A * C, B * C,0.0);
-        ret *= sqrt(frFactor);
+        //ret *= sqrt(frFactor);
         ret *= TComplex(par[0],par[1],0);
 
     return ret;
 }
 
+
 TComplex flatte(double *x, double *par) {
     // indices[1] is unused constant index, for consistency with other function types.
     double resmass            = par[2];
     double g1                 = par[3];
-    double g2                 = par[4] * g1;
+    double g2                 = par[4]*g1;
 
     double pipmass = 0.13957018;
     double pi0mass = 0.1349766;
@@ -116,6 +117,7 @@ TComplex flatte(double *x, double *par) {
             rhokk_real += 0.5 * sqrt(1 - twok0masssq / s); // Above K0K0 threshold
         else
             rhokk_imag += 0.5 * sqrt(-1 + twok0masssq / s);
+            
         double A = (resmass * resmass - s) + resmass * (rhopipi_imag * g1 + rhokk_imag * g2);
         double B = resmass * (rhopipi_real * g1 + rhokk_real * g2);
         double C = 1.0 / (A * A + B * B);
@@ -125,36 +127,49 @@ TComplex flatte(double *x, double *par) {
     return ret;
 }
 
+
 //Full SWave
 double SWave_amp(double *x, double *par){
-    return (plainBW(x,par) + flatte(x,&par[4])).Rho2();
+    return (  plainBW(x,par)  /* +  flatte(x,&par[4]) */  ).Rho2();
 }
 
 double SWave_theta(double *x, double *par){
-    return (plainBW(x,par) + flatte(x,&par[4])).Theta();
+    return (plainBW(x,par) /* + flatte(x,&par[4]) */).Theta();
 }
 
 void PWACoefs(){
 
-    TF1 *amp = new TF1("amp",SWave_amp,s12_min,s12_max,9);
-    amp->SetParameters(1.0,0.0,.480,.350,2.0,0.0,0.965,0.165,4.21);
-    TF1 *phase = new TF1("phase",SWave_theta,s12_min,s12_max,9);
-    phase->SetParameters(1.0,0.0,.480,.350,2.0,0.0,0.965,0.165,4.21);
-    
-    double rho = 0;
-    double theta =0;
     double s = 0;
+    double bin_amp = 0;
+    double bin_amp_c = 0;
+    double bin_phase = 0;
+    double bin_phase_c = 0;
 
     ofstream wr("files/PWACOEFS.txt");
 
+    double c = 0; 
+    int j = 1;
+    int counter = 0;
+
     for(int i = 0 ; i < slices ; i++){
 
-    s = s12_min + i*(s12_max-s12_min)/(slices-1);
-    rho = amp->Eval(s);
-    theta = phase->Eval(s);
+    if(s<0.5){
+        s = s12_min + i*0.5*(s12_max-s12_min)/(slices-1);
+        c=s;
+        counter++;
+    }else{
+        s = c + j*(s12_max-c)/(slices-counter);
+        j++;
+    }
 
-    printf("%lg = (%lg,%lg) \n ",s,rho,theta);
-    wr << sqrt(s) << " " << rho << " "<< theta << endl;
+    double par[4] = {1.0,0.0,.480,.350}; 
+
+    TComplex v = plainBW(&s,par);
+    bin_amp_c = v.Re();
+    bin_phase_c = v.Im();
+
+    printf("%lg = (%lg,%lg) \n ",s,bin_amp_c,bin_phase_c);
+    wr << s << " " << bin_amp_c << " "<< bin_phase_c << endl;
     }
 
     wr.close();
@@ -163,56 +178,34 @@ void PWACoefs(){
 
 void isobar(){
 
-    TF1 *f1 = new TF1("Theta",SWave_theta,s12_min,s12_max,9);
-    f1->SetParameters(1.0,0.0,.480,.350,2.0,0.0,0.965,0.165,4.21);
+    TF1 *f1 = new TF1("Amp",SWave_amp,s12_min,s12_max,4);
+    f1->SetParameters(1.0,0.0,.480,.350 /* ,2.0,.0,.965,.165,4.21 */); 
 
-    TF1 *f3 = new TF1("Rho2",SWave_amp,s12_min,s12_max,9);
-    //f3->SetParameters(1.0,0.0,.480,.350,2.0,0.0,0.965,0.165,4.21);
+    TF1 *f2 = new TF1("Phase",SWave_theta,s12_min,s12_max,4);
+    f2->SetParameters(1.0,0.0,.480,.350 /* ,2.0,.0,.965,.165,4.21 */);
 
-    //free parameters
-    f3->SetParameter(0,1.0);
-    f3->SetParLimits(0,-100.0,+100.0);
-    f3->SetParError(0,0.01);
-    
-    f3->SetParameter(1,0.0);
-    f3->SetParLimits(1,-100.0,+100.0);
-    f3->SetParError(1,0.01);
-
-    f3->SetParameter(4,2.0);
-    f3->SetParLimits(4,-100.0,+100.0);
-    f3->SetParError(4,0.01);
-
-    f3->SetParameter(5,0.0);
-    f3->SetParLimits(5,-100.0,+100.0);
-    f3->SetParError(5,0.01);  
-
-    //fixed parameters
-    f3->FixParameter(2,.480);
-    f3->FixParameter(3,.350);
-    f3->FixParameter(6,0.965);
-    f3->FixParameter(7,.165);
-    f3->FixParameter(8,4.21); 
-
-    TTree *t = new TTree("Tree","Tree");
-    t->ReadFile("D2PPP_toy.txt","x:y:z");
-    TH1D *h1 = new TH1D("h1","Sigma(480)(BW) + f0(980)(Flatte)",100,s12_min,s12_max);
-    //h1->FillRandom("Rho2",100000);
-    t->Draw("y>>h1");
+    TH1D *h1 = new TH1D("h1","Sigma(480)(BW)",100,s12_min,s12_max);
     h1->GetXaxis()->SetTitle("m^{2}(#pi^{-} #pi^{+}) [Gev]");
-    h1->Scale(1.0/ 91.7737,"");
-    h1->Fit(f3,"RL");
+    h1->FillRandom("Amp",100000);
 
-    //TCanvas *c = new TCanvas("c","amp",800,500);
-    //c->Divide(2,1);
-    //c->cd(1);
-    //f3->Draw();
-    //c.SaveAs("plots/Amp.png");
-    //c->Close();
-    //c->cd(2);
-    //TCanvas c1("c1","theta",700,600);
-    //f1->Draw();
-    //c->SaveAs("plots/Amp&Theta.png");
-    //c1->Close();
+    TH1D *h0 = new TH1D("h0","Sigma(480)(BW)",100,s12_min,s12_max);
+    h0->SetLineColor(kRed);
+    TTree *t = new TTree("t","");
+    t->ReadFile("/mnt/d/Work/GooFit/build/goofit_charm/D2PPP_toy.txt","x:y:z");
+    t->Draw("y>>h0");
 
-
+    //TH2D *h2 = new TH2D("h2","",100,s12_min,s12_max,100,0,25000);
+    //h2->SetMarkerStyle(2);
+    TTree *t2 = new TTree("t2","");
+    t2->ReadFile("/mnt/d/Work/GooFit/build/goofit_charm/files/PWACOEFS.txt","x:y:z");
+    
+    //t2->Draw("(y*y + z*z):x>>h2","","*");
+    //t2->Draw("TMath::ATan2(z,y):x>>h2","","*");
+    //h1->Draw("L");
+    //h1->Draw("L");
+    //h0->Draw("Lsame"); 
+    //h0->Divide(h1);
+    //h0->Fit("Amp","RLL");
+    //f1->Draw("same");
+    //f2->Draw("same");
 }

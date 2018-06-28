@@ -13,6 +13,7 @@
 #include <TROOT.h>
 #include <TMinuit.h>
 #include <TNtuple.h>
+#include <TComplex.h>
 
 
 // System stuff
@@ -149,13 +150,13 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
     int i = 0;
     while(reader >> e1 >> e2 >> e3) {
 
-        HH_bin_limits.push_back(e1 * e1);
+        HH_bin_limits.push_back(e1);
 
-        emag = e2;
-        ephs = e3;
+        emag = sqrt(e2*e2 + e3*e3);
+        ephs = TMath::ATan2(e3, e2);
 
-        Variable va(fmt::format("pwa_coef_{}_mag", i), emag, .000001, 0, 10000);
-        Variable vp(fmt::format("pwa_coef_{}_phase", i), ephs, .000001, -360, 360);
+        Variable va(fmt::format("pwa_coef_{}_mag", i), emag, .000001, emag*.95, emag*1.5);
+        Variable vp(fmt::format("pwa_coef_{}_phase", i), ephs, .000001, ephs*.95, ephs*1.1);
 
         pwa_coefs_amp.push_back(va);
         pwa_coefs_phs.push_back(vp);
@@ -163,10 +164,8 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
 
     }
 
-    Variable swave_amp_real("swave_amp_real", 3.0, 0.001, 0, 0);
-    Variable swave_amp_imag("swave_amp_imag", 0.0, 0.001, 0, 0);
-    swave_amp_real.setFixed(true);
-    swave_amp_imag.setFixed(true);
+    Variable swave_amp_real("swave_amp_real", 1.0, 0.001, -100.0,+100.0);
+    Variable swave_amp_imag("swave_amp_imag", 0.0, 0.001, -100.0,+100.0);
 
     if(fixAmp) {
         swave_amp_real.setValue(1.);
@@ -275,20 +274,20 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     ResonancePdf *nonr = new Resonances::NonRes("nonr", nonr_amp_real, nonr_amp_imag);
 
     //MIPWA
-    ResonancePdf *swave_12 = loadPWAResonance(pwa_file, false);
+    ResonancePdf *swave_12 = loadPWAResonance(pwa_file, true);
 
-    //dtoppp.resonances.push_back(rho_12);
+    dtoppp.resonances.push_back(rho_12);
     //dtoppp.resonances.push_back(rho_13);
     //dtoppp.resonances.push_back(omega_12);
     //dtoppp.resonances.push_back(omega_13);
     //dtoppp.resonances.push_back(f2_12);
     //dtoppp.resonances.push_back(f2_13);
-    dtoppp.resonances.push_back(sigma_12);
+    //dtoppp.resonances.push_back(sigma_12);
     //dtoppp.resonances.push_back(sigma_13);
-    dtoppp.resonances.push_back(f0_12);
+    //dtoppp.resonances.push_back(f0_12);
     //dtoppp.resonances.push_back(f0_13);
     //dtoppp.resonances.push_back(nonr); 
-    //dtoppp.resonances.push_back(swave_12);
+    dtoppp.resonances.push_back(swave_12);
 
     if(!eff) {
         // By default create a constant efficiency.
@@ -448,8 +447,8 @@ void makeToyDalitzPdfPlots(GooPdf *overallSignal, string plotdir = "plots") {
         for(int j = 0; j < s13.getNumBins(); ++j) {
             s13.setValue(s13.getLowerLimit()
                          + (s13.getUpperLimit() - s13.getLowerLimit()) * (j + 0.5) / s13.getNumBins());
-            if(!inDalitz(s12.getValue(), s13.getValue(), D_MASS, d1_MASS, d2_MASS, d3_MASS))
-                continue;
+            if(!inDalitz(s12.getValue(), s13.getValue(), D_MASS, d1_MASS, d2_MASS, d3_MASS)){
+                continue;}
             eventNumber.setValue(evtCounter);
             evtCounter++;
             currData.addEvent();
@@ -492,6 +491,27 @@ void makeToyDalitzPdfPlots(GooPdf *overallSignal, string plotdir = "plots") {
     drawFitPlotsWithPulls(&s23_dat_hist, &s23_pdf_hist, plotdir);
 }
 
+void runMakeToyDalitzPdfPlots(std::string name){
+
+    s12.setNumBins(1500);
+    s13.setNumBins(1500);
+
+    gettoydata(name);
+
+    if(signaldalitz == nullptr){
+        signaldalitz = makesignalpdf(0);
+        }
+    
+    comps.clear();
+    comps.push_back(signaldalitz);
+    ProdPdf *overallsignal = new ProdPdf("overallsignal",comps);
+    overallsignal->setData(Data);
+    signaldalitz->setDataSize(Data->getNumEvents());
+
+    makeToyDalitzPdfPlots(overallsignal);
+
+}
+
 void runtoyfit(std::string name){
 
     s12.setNumBins(1500);
@@ -513,30 +533,39 @@ void runtoyfit(std::string name){
 
     FitManagerMinuit2 fitter(overallsignal);
     fitter.setVerbosity(3);
-
+    
     auto func_min = fitter.fit();
 
-    signaldalitz->copyParams();
-
-    cout << "Normalization = " << signaldalitz->normalize() << endl;
-
     auto ff = signaldalitz->fit_fractions();
-
     PrintFF(ff);
 
     makeToyDalitzPdfPlots(overallsignal);
 
-}
+    signaldalitz->copyParams();
+    signaldalitz->normalise();
+    thrust::device_vector<fpcomplex> w1 = signaldalitz->getCachedWave(0);
+    thrust::device_vector<fpcomplex> w2 = signaldalitz->getCachedWave(1);
+    thrust::device_vector<fpcomplex> w3 = signaldalitz->getCachedWave(2);
+    thrust::device_vector<fpcomplex> w4 = signaldalitz->getCachedWave(3);
 
-/*void getSWaveAmps(){
+    ofstream wr("pwa.txt");
 
-    if(signaldalitz == nullptr){
-        signaldalitz = makesignalpdf(0);
+    for(size_t i = 0 ; i < w1.size(); i++){
+
+        fpcomplex v1 = w1[i];
+        fpcomplex v2 = w2[i];
+        fpcomplex v3 = w3[i];
+        fpcomplex v4 = w4[i];
+        
+        fpcomplex v  = v1 + v2 + v3 + v4;
+
+        wr << i  << '\t' << v.real() << '\t' << v.imag() << endl;
     }
 
-    signaldalitz->getCachedWave()
+    wr.close();
 
-}*/
+
+}
 
 int main(int argc, char **argv){
 
@@ -548,6 +577,7 @@ int main(int argc, char **argv){
 
     auto fit = app.add_subcommand("fit","fit toy data");
 
+    auto plot = app.add_subcommand("plot","plot signal");
 
     GOOFIT_PARSE(app);
 
@@ -564,6 +594,11 @@ int main(int argc, char **argv){
     if(*fit){
         CLI::AutoTimer timer("FIT");
         runtoyfit("D2PPP_toy.txt");
+    }
+
+    if(*plot){
+        CLI::AutoTimer timer("FIT");
+        runMakeToyDalitzPdfPlots("D2PPP_toy.txt");
     }
 
 }
