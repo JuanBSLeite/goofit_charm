@@ -155,8 +155,8 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
         emag = sqrt(e2*e2 + e3*e3);
         ephs = TMath::ATan2(e3, e2);
 
-        Variable va(fmt::format("pwa_coef_{}_mag", i), emag, .000001, emag*.95, emag*1.5);
-        Variable vp(fmt::format("pwa_coef_{}_phase", i), ephs, .000001, ephs*.95, ephs*1.1);
+        Variable va(fmt::format("pwa_coef_{}_mag", i), emag, .000001, -100.0, +100.0);
+        Variable vp(fmt::format("pwa_coef_{}_phase", i), ephs, .000001, -360.0, +360.0);
 
         pwa_coefs_amp.push_back(va);
         pwa_coefs_phs.push_back(vp);
@@ -164,8 +164,8 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
 
     }
 
-    Variable swave_amp_real("swave_amp_real", 1.0, 0.001, -100.0,+100.0);
-    Variable swave_amp_imag("swave_amp_imag", 0.0, 0.001, -100.0,+100.0);
+    Variable swave_amp_real("swave_amp_real", 1.0, 0.001, -50.0,+50.0);
+    Variable swave_amp_imag("swave_amp_imag", 0.0, 0.001, -50.0,+50.0);
 
     if(fixAmp) {
         swave_amp_real.setValue(1.);
@@ -274,7 +274,7 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     ResonancePdf *nonr = new Resonances::NonRes("nonr", nonr_amp_real, nonr_amp_imag);
 
     //MIPWA
-    ResonancePdf *swave_12 = loadPWAResonance(pwa_file, true);
+    ResonancePdf *swave_12 = loadPWAResonance(pwa_file, false);
 
     dtoppp.resonances.push_back(rho_12);
     //dtoppp.resonances.push_back(rho_13);

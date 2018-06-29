@@ -16,70 +16,28 @@ double s12_max = pow(D_MASS   - d2_MASS,2);
 
 int slices = 50;
 
-double twoBodyCMmom(double rMassSq, double d1m, double d2m) {
-    // For A -> B + C, calculate momentum of B and C in rest frame of A.
-    // PDG 38.16.
-
-    double kin1 = 1.0 - pow(d1m + d2m,2) / rMassSq;
-
-    kin1 = kin1 >= 0.0 ? sqrt(kin1) : 1.0;
-
-    double kin2 = 1.0 - pow(d1m - d2m,2) / rMassSq;
-    kin2        = kin2 >= 0.0 ? sqrt(kin2) : 1.0;
-
-    return 0.5 * sqrt(rMassSq) * kin1 * kin2;
-}
-double dampingFactorSquare(const double &cmmom, const int &spin, const double &mRadius) {
-    double square = mRadius * mRadius * cmmom * cmmom;
-    double dfsq   = 1 + square; // This accounts for spin 1
-    // if (2 == spin) dfsq += 8 + 2*square + square*square; // Coefficients are 9, 3, 1.
-    double dfsqres = dfsq + 8 + 2 * square + square * square;
-
-    // Spin 3 and up not accounted for.
-    // return dfsq;
-    return (spin == 2) ? dfsqres : dfsq;
-}
-
 TComplex plainBW(double *x, double *par) {
 
-    unsigned int spin = 0;
     double resmass  = par[2];
     double reswidth = par[3];
-
     double resmass2 = pow(resmass,2);
     
-        double rMassSq    = x[0];
-        double mass_daug1 = pi_MASS;
-        double mass_daug2 = pi_MASS;
-
-        double frFactor = 1;
-
-        // Calculate momentum of the two daughters in the resonance rest frame
-        // Note symmetry under interchange (dm1 <-> dm2)
-
-        double measureDaughterMoms = twoBodyCMmom(rMassSq, mass_daug1, mass_daug2);
-        double nominalDaughterMoms = twoBodyCMmom(resmass2, mass_daug1, mass_daug2);
-
-        if(0 != spin) {
-        frFactor = dampingFactorSquare(nominalDaughterMoms, spin, 1.5);
-        frFactor /= dampingFactorSquare(measureDaughterMoms, spin, 1.5);
-    }
-
-        // RBW evaluation
-        double A = (resmass2 - rMassSq);
-        double B = resmass2 * reswidth /* *pow(measureDaughterMoms / nominalDaughterMoms, 2.0 * spin + 1)* frFactor/ sqrt(rMassSq) */;
+    double s    = x[0];
+   
+       // RBW evaluation
+        double A = (resmass2 - s);
+        double B = resmass2 * reswidth;
         double C = 1.0 / (A*A + B*B);
 
-        TComplex ret(A * C, B * C,0.0);
-        //ret *= sqrt(frFactor);
-        ret *= TComplex(par[0],par[1],0);
+        TComplex ret(A * C, B * C);
+        ret *= TComplex(par[0],par[1],1);
 
     return ret;
 }
 
 
 TComplex flatte(double *x, double *par) {
-    // indices[1] is unused constant index, for consistency with other function types.
+    
     double resmass            = par[2];
     double g1                 = par[3];
     double g2                 = par[4]*g1;
@@ -122,9 +80,9 @@ TComplex flatte(double *x, double *par) {
         double B = resmass * (rhopipi_real * g1 + rhokk_real * g2);
         double C = 1.0 / (A * A + B * B);
         TComplex retur(A * C, B * C);
-        ret = retur*TComplex(par[0],par[1],0);
+        retur *= TComplex(par[0],par[1]);
     
-    return ret;
+    return retur;
 }
 
 
@@ -154,7 +112,7 @@ void PWACoefs(){
     for(int i = 0 ; i < slices ; i++){
 
     if(s<0.5){
-        s = s12_min + i*0.5*(s12_max-s12_min)/(slices-1);
+        s = s12_min + i*0.2*(s12_max-s12_min)/(slices-1);
         c=s;
         counter++;
     }else{
@@ -203,9 +161,10 @@ void isobar(){
     //t2->Draw("TMath::ATan2(z,y):x>>h2","","*");
     //h1->Draw("L");
     //h1->Draw("L");
-    h0->Draw("Lsame"); 
+    //h0->Draw("Lsame"); 
     //h0->Divide(h1);
     //h0->Fit("Amp","RLL");
-    //f1->Draw("same");
+    f1->Draw("same");
     //f2->Draw("same");
 }
+
