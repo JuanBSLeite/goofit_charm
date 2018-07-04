@@ -1,2 +1,2 @@
-# goofit_cbpf
+# goofit_charm
 Study of D2PPP channel
