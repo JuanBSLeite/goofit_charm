@@ -23,8 +23,11 @@ t.ReadFile("D2PPP_toy_iso.txt","x:y:z");
 TTree t2("t2","");
 t2.ReadFile("D2PPP_toy_pwa.txt","x:y:z");
 
-
 t.Draw("y>>h0");
 t2.Draw("(y)>>h1","","same");
+
+h0->Sumw2();
+h0->Divide(h1);
+h0->Draw("E");
 
 }

@@ -11,10 +11,13 @@ double d1_MASS  = pi_MASS;  //daughter 1 mass
 double d2_MASS  = pi_MASS;
 double d3_MASS  = pi_MASS;
 
-double s12_min = pow(d1_MASS  + d2_MASS,2);
-double s12_max = pow(D_MASS   - d2_MASS,2);
+double s12_min = (d1_MASS  + d2_MASS)*(d1_MASS + d2_MASS);
+double s12_max = (D_MASS   - d2_MASS)*(D_MASS - d2_MASS);
 
-int slices = 50;
+double m12_min = s12_min;
+double m12_max = s12_max;
+
+int slices = 70;
 
 TComplex plainBW(double *x, double *par) {
 
@@ -112,11 +115,11 @@ void PWACoefs(){
     for(int i = 0 ; i < slices ; i++){
 
     if(s<0.5){
-        s = s12_min + i*0.2*(s12_max-s12_min)/(slices-1);
+        s = m12_min + i*(0.3)*(m12_max-m12_min)/(slices-1);
         c=s;
         counter++;
     }else{
-        s = c + j*(s12_max-c)/(slices-counter);
+        s = c + j*(m12_max-c)/(slices-counter);
         j++;
     }
 
@@ -136,20 +139,20 @@ void PWACoefs(){
 
 void isobar(){
 
-    TF1 *f1 = new TF1("Amp",SWave_amp,s12_min,s12_max,4);
+    TF1 *f1 = new TF1("Amp",SWave_amp,m12_min,m12_max,4);
     f1->SetParameters(1.0,0.0,.480,.350 /* ,2.0,.0,.965,.165,4.21 */); 
 
-    TF1 *f2 = new TF1("Phase",SWave_theta,s12_min,s12_max,4);
+    TF1 *f2 = new TF1("Phase",SWave_theta,m12_min,m12_max,4);
     f2->SetParameters(1.0,0.0,.480,.350 /* ,2.0,.0,.965,.165,4.21 */);
 
-    TH1D *h1 = new TH1D("h1","Sigma(480)(BW)",100,s12_min,s12_max);
+    TH1D *h1 = new TH1D("h1","Sigma(480)(BW)",100,m12_min,m12_max);
     h1->GetXaxis()->SetTitle("m^{2}(#pi^{-} #pi^{+}) [Gev]");
     h1->FillRandom("Amp",100000);
 
-    TH1D *h0 = new TH1D("h0","Sigma(480)(BW)",100,s12_min,s12_max);
+    TH1D *h0 = new TH1D("h0","Sigma(480)(BW)",100,m12_min,m12_max);
     h0->SetLineColor(kRed);
     TTree *t = new TTree("t","");
-    t->ReadFile("D2PPP_toy.txt","x:y:z");
+    t->ReadFile("D2PPP_toy_iso.txt","x:y:z");
     t->Draw("y>>h0");
 
     //TH2D *h2 = new TH2D("h2","",100,s12_min,s12_max,100,0,25000);
@@ -159,9 +162,9 @@ void isobar(){
     
     t2->Draw("(y*y + z*z):x>>h2","","*");
     //t2->Draw("TMath::ATan2(z,y):x>>h2","","*");
+    //h1->DrawNormalized("L");
     //h1->Draw("L");
-    //h1->Draw("L");
-    //h0->Draw("Lsame"); 
+    //h0->DrawNormalized("Lsame"); 
     //h0->Divide(h1);
     //h0->Fit("Amp","RLL");
     f1->Draw("same");

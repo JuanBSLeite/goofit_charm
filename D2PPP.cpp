@@ -152,8 +152,8 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
 
         HH_bin_limits.push_back(e1);
 
-        emag = sqrt(e2*e2 + e3*e3);
-        ephs = TMath::ATan2(e3, e2);
+        emag = e2;//sqrt(e2*e2 + e3*e3);
+        ephs = e3;//TMath::ATan2(e3, e2);
 
         Variable va(fmt::format("pwa_coef_{}_mag", i), emag, .000001, -100.0, +100.0);
         Variable vp(fmt::format("pwa_coef_{}_phase", i), ephs, .000001, -360.0, +360.0);
@@ -175,7 +175,7 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
     }
     cout << "Numbers loaded: " << HH_bin_limits.size() << " / " << i << endl;
 
-    ResonancePdf *swave_12 = new Resonances::Spline("swave_12", swave_amp_real, swave_amp_imag, HH_bin_limits, pwa_coefs_amp, pwa_coefs_phs, PAIR_12, false);
+    ResonancePdf *swave_12 = new Resonances::Spline("swave_12", swave_amp_real, swave_amp_imag, HH_bin_limits, pwa_coefs_amp, pwa_coefs_phs, PAIR_12, true);
 
     return swave_12;
 } 
@@ -277,7 +277,7 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     ResonancePdf *swave_12 = loadPWAResonance(pwa_file, false);
 
     dtoppp.resonances.push_back(rho_12);
-    //dtoppp.resonances.push_back(rho_13);
+    dtoppp.resonances.push_back(rho_13);
     //dtoppp.resonances.push_back(omega_12);
     //dtoppp.resonances.push_back(omega_13);
     //dtoppp.resonances.push_back(f2_12);
@@ -566,6 +566,8 @@ void runtoyfit(std::string name){
     */
 
 }
+
+
 
 int main(int argc, char **argv){
 
