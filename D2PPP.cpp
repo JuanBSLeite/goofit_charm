@@ -512,6 +512,32 @@ void runMakeToyDalitzPdfPlots(std::string name){
 
 }
 
+void saveParameters(const std::vector<ROOT::Minuit2::MinuitParameter> &param, std::string file){
+
+    std::vector<fptype> v;
+    std::ofstream output_file(file.c_str(),std::ofstream::out | std::ofstream::app);
+
+    for(size_t i = 0 ; i < param.size() ; i++){
+
+        if(param[i].IsConst() || param[i].IsFixed()){
+
+            continue;
+
+        }else{
+
+            //v.push_back(param[i].Value());
+            //v.push_back(param[i].Error());
+            output_file << i << "\t" << param[i].Value() << "\t" << param[i].Error() << std::endl;
+
+        }
+
+    }
+    output_file.close();
+
+}
+
+
+
 void runtoyfit(std::string name){
 
     s12.setNumBins(1500);
@@ -532,14 +558,27 @@ void runtoyfit(std::string name){
     signaldalitz->setDataSize(Data->getNumEvents());
 
     FitManagerMinuit2 fitter(overallsignal);
-    fitter.setVerbosity(3);
-    
+    fitter.setVerbosity(3); 
+   
+   
+        auto param = fitter.getParams()->Parameters();
+
+        saveParameters(param,"Parametros_iniciais.txt");
+   
+
     auto func_min = fitter.fit();
 
-    auto ff = signaldalitz->fit_fractions();
-    PrintFF(ff);
+   
+        auto ff = signaldalitz->fit_fractions();
+    
+        auto param2 = fitter.getParams()->Parameters();
+    
+        PrintFF(ff);
 
-    makeToyDalitzPdfPlots(overallsignal);
+        makeToyDalitzPdfPlots(overallsignal);
+
+        saveParameters(param2,"Parametros_fit.txt");
+   
 
     /*signaldalitz->copyParams();
     signaldalitz->normalise();

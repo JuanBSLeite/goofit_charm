@@ -17,7 +17,7 @@ double s12_max = (D_MASS   - d2_MASS)*(D_MASS - d2_MASS);
 double m12_min = s12_min;
 double m12_max = s12_max;
 
-int slices = 70;
+int slices = 50;
 
 TComplex plainBW(double *x, double *par) {
 
