@@ -17,7 +17,7 @@ double s12_max = (D_MASS   - d2_MASS)*(D_MASS - d2_MASS);
 double m12_min = s12_min;
 double m12_max = s12_max;
 
-int slices = 70;
+int slices = 50;
 
 TComplex plainBW(double *x, double *par) {
 
@@ -91,11 +91,11 @@ TComplex flatte(double *x, double *par) {
 
 //Full SWave
 double SWave_amp(double *x, double *par){
-    return (  plainBW(x,par)  /* +  flatte(x,&par[4]) */  ).Rho2();
+    return (  plainBW(x,par)  /*+  flatte(x,&par[4]) */ ).Rho2();
 }
 
 double SWave_theta(double *x, double *par){
-    return (plainBW(x,par) /* + flatte(x,&par[4]) */).Theta();
+    return (plainBW(x,par)  + flatte(x,&par[4]) ).Theta();
 }
 
 void PWACoefs(){
@@ -114,8 +114,8 @@ void PWACoefs(){
 
     for(int i = 0 ; i < slices ; i++){
 
-    if(s<0.5){
-        s = m12_min + i*(0.3)*(m12_max-m12_min)/(slices-1);
+    if(s<1.5){
+        s = m12_min + i*(0.8)*(m12_max-m12_min)/(slices-1);
         c=s;
         counter++;
     }else{
@@ -123,9 +123,9 @@ void PWACoefs(){
         j++;
     }
 
-    double par[4] = {1.0,0.0,.480,.350}; 
+    double par[4] = {1.0,0.0,.480,.350/*,2.0,.0,.965,.165,4.21*/}; 
 
-    TComplex v = plainBW(&s,par);
+    TComplex v = ( plainBW(&s,par) /*+ flatte(&s,&par[4])*/ );
     bin_amp_c = v.Re();
     bin_phase_c = v.Im();
 
