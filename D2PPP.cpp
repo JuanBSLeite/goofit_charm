@@ -259,16 +259,16 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     ResonancePdf* rho_12 = new Resonances::GS("rho",v_rho_amp_real,v_rho_amp_img,v_rho_Mass,v_rho_Width,1,PAIR_12,true);
     ResonancePdf* rho_13 = new Resonances::GS("rho",v_rho_amp_real,v_rho_amp_img,v_rho_Mass,v_rho_Width,1,PAIR_13);
 
-    ResonancePdf* omega_12 = new Resonances::RBW("omega",v_omega_amp_real,v_omega_amp_img,v_omega_Mass,v_omega_Width,1,PAIR_12);
+    ResonancePdf* omega_12 = new Resonances::RBW("omega",v_omega_amp_real,v_omega_amp_img,v_omega_Mass,v_omega_Width,1,PAIR_12,true);
     ResonancePdf* omega_13 = new Resonances::RBW("omega",v_omega_amp_real,v_omega_amp_img,v_omega_Mass,v_omega_Width,1,PAIR_13);
 
-    ResonancePdf* f2_12 = new Resonances::RBW("f2",v_f2_amp_real,v_f2_amp_img,v_f2_Mass,v_f2_Width,2,PAIR_12);
+    ResonancePdf* f2_12 = new Resonances::RBW("f2",v_f2_amp_real,v_f2_amp_img,v_f2_Mass,v_f2_Width,2,PAIR_12,true);
     ResonancePdf* f2_13 = new Resonances::RBW("f2",v_f2_amp_real,v_f2_amp_img,v_f2_Mass,v_f2_Width,2,PAIR_13);
 
     ResonancePdf* sigma_12 = new Resonances::RBW("sigma",v_sigma_amp_real,v_sigma_amp_img,v_sigma_Mass,v_sigma_Width,(unsigned int)0,PAIR_12,true);
     ResonancePdf* sigma_13 = new Resonances::RBW("sigma",v_sigma_amp_real,v_sigma_amp_img,v_sigma_Mass,v_sigma_Width,(unsigned int)0,PAIR_13);
 
-    ResonancePdf* f0_12 = new Resonances::FLATTE("f0",v_f0_amp_real,v_f0_amp_img,v_f0_Mass,v_f0_GPP,v_f0_GKK,PAIR_12,false);
+    ResonancePdf* f0_12 = new Resonances::FLATTE("f0",v_f0_amp_real,v_f0_amp_img,v_f0_Mass,v_f0_GPP,v_f0_GKK,PAIR_12,true);
     ResonancePdf* f0_13 = new Resonances::FLATTE("f0",v_f0_amp_real,v_f0_amp_img,v_f0_Mass,v_f0_GPP,v_f0_GKK,PAIR_13,false);
 
     ResonancePdf *nonr = new Resonances::NonRes("nonr", nonr_amp_real, nonr_amp_imag);
@@ -278,15 +278,15 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
 
     dtoppp.resonances.push_back(rho_12);
     //dtoppp.resonances.push_back(rho_13);
-    //dtoppp.resonances.push_back(omega_12);
+    dtoppp.resonances.push_back(omega_12);
     //dtoppp.resonances.push_back(omega_13);
-    //dtoppp.resonances.push_back(f2_12);
+    dtoppp.resonances.push_back(f2_12);
     //dtoppp.resonances.push_back(f2_13);
     //dtoppp.resonances.push_back(sigma_12);
     //dtoppp.resonances.push_back(sigma_13);
     //dtoppp.resonances.push_back(f0_12);
     //dtoppp.resonances.push_back(f0_13);
-    //dtoppp.resonances.push_back(nonr); 
+    dtoppp.resonances.push_back(nonr); 
     dtoppp.resonances.push_back(swave_12);
 
     if(!eff) {
