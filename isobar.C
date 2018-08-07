@@ -98,7 +98,7 @@ double SWave_theta(double *x, double *par){
     return (plainBW(x,par)  + flatte(x,&par[4]) ).Theta();
 }
 
-void PWACoefs(){
+void PWACoefs(double val){
 
     double s = 0;
     double bin_amp_real = 0;
@@ -106,19 +106,30 @@ void PWACoefs(){
 
     ofstream wr("files/PWACOEFS.txt");
 
-    double par[9] = {1.0,0.0,.480,.350,2.0,.0,.965,.165,4.21}; 
+    double par[4] = {1.0,0.0,.480,.350/*,2.0,.0,.965,.165,4.21*/}; 
+
+    int temp = 0;
+    int j = 1;
 
     for(int i = 0; i < slices; i++){
 
-    	s = m12_min + i*(m12_max-m12_min)/(slices-1);
+    	if(s<val){
+		s = m12_min + i*(1.8)*(val-m12_min)/(slices);
+		temp++;
+    	}else{
+	
+		s = val + j*(m12_max-val)/(slices - temp);
+		j++;
+	}
 
-    	TComplex v = ( plainBW(&s,par) + flatte(&s,&par[4]) );
-    	bin_amp_real = v.Re();
-    	bin_amp_img = v.Im();
+		TComplex v = ( plainBW(&s,par) /*+ flatte(&s,&par[4]) */);
+    		bin_amp_real = v.Re();
+    		bin_amp_img = v.Im();
 
-    	printf("%lg = (%lg,%lg) \n ",s,bin_amp_real,bin_amp_img);
-    	wr << s << " " << bin_amp_real << " "<< bin_amp_img << endl;
-    
+    		printf("%lg = (%lg,%lg) \n ",s,bin_amp_real,bin_amp_img);
+    		wr << s << " " << bin_amp_real << " "<< bin_amp_img << endl;
+
+	
     }
 
     wr.close();
