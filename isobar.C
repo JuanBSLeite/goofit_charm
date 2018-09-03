@@ -91,7 +91,7 @@ TComplex flatte(double *x, double *par) {
 
 //Full SWave
 double SWave_amp(double *x, double *par){
-    return (  plainBW(x,par)  /*+  flatte(x,&par[4]) */ ).Rho2();
+    return (  plainBW(x,par)  +  flatte(x,&par[4]) ).Rho2();
 }
 
 double SWave_theta(double *x, double *par){
@@ -106,7 +106,7 @@ void PWACoefs(double val){
 
     ofstream wr("files/PWACOEFS.txt");
 
-    double par[4] = {1.0,0.0,.480,.350/*,2.0,.0,.965,.165,4.21*/}; 
+    double par[9] = {1.0,0.0,.480,.350,2.0,.0,.965,.165,4.21}; 
 
     int temp = 0;
     int j = 1;
@@ -114,7 +114,7 @@ void PWACoefs(double val){
     for(int i = 0; i < slices; i++){
 
     	if(s<val){
-		s = m12_min + i*(1.8)*(val-m12_min)/(slices);
+		s = m12_min + i*(1.5)*(val-m12_min)/(slices);
 		temp++;
     	}else{
 	
@@ -122,7 +122,7 @@ void PWACoefs(double val){
 		j++;
 	}
 
-		TComplex v = ( plainBW(&s,par) /*+ flatte(&s,&par[4]) */);
+		TComplex v = ( plainBW(&s,par) + flatte(&s,&par[4]));
     		bin_amp_real = v.Re();
     		bin_amp_img = v.Im();
 
