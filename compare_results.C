@@ -3,7 +3,7 @@
 #include <math.h>
 #include <TMath.h>
 
-const int N = 100;
+const int N = 60;
 
 double ev[N];
 double amp[N];
@@ -22,8 +22,8 @@ while(r >> x >> y >> z >> w >> t){
 	ev[i] = i;
 	amp[i] = sqrt(z*z + y*y);
 	amp_e[i] = sqrt( pow(w*y/sqrt(z*z+y*y),2) + pow(t*z/sqrt(z*z+y*y),2) );
-	phase[i] = TMath::ATan(z/y);
-	phase_e[i] = sqrt(pow(-w*z/(z*z + y*y),2) + pow(t*y/(z*z + y*y),2)) ;
+	phase[i] = abs(TMath::ATan2(z,y)*180.0/M_PI);
+	phase_e[i] =sqrt(pow(-w*z/(z*z + y*y),2) + pow(t*y/(z*z + y*y),2))*180.0/M_PI ;
 	ev_e[i] = 0.0;
 
 	i++;
@@ -50,9 +50,11 @@ while(fr >> fx >> fy >> fz >> fw >> ft){
 	fev[j] = j;
 	famp[j] = sqrt(fz*fz + fy*fy);
 	famp_e[j] = sqrt( pow(fw*fy/sqrt(fz*fz+fy*fy),2) + pow(ft*fz/sqrt(fz*fz+fy*fy),2) );
-	fphase[j] = TMath::ATan(fz/fy);
-	fphase_e[j] = sqrt(pow(-fw*fz/(fz*fz + fy*fy),2) + pow(ft*fy/(fz*fz + fy*fy),2)) ;
+	fphase[j] = abs(TMath::ATan2(fz,fy)*180.0/M_PI);
+	fphase_e[j] = sqrt(pow(-fw*fz/(fz*fz + fy*fy),2) + pow(ft*fy/(fz*fz + fy*fy),2))*180.0/M_PI ;
 	fev_e[j] = 0.0;
+
+    printf("(%lg,%lg) - (%lg,%lg) \n",ev[j],phase[j],fev[j],fphase[j]);
 
 	j++;
 
@@ -75,15 +77,11 @@ for(int k = 0; k < N ; k++){
 }
 
 TCanvas *c = new TCanvas("c","",900,500);
-
-
-c->Divide(2,2);
-
-c->cd(1);
-
+c->SetGridy();
 TGraphErrors *gr = new TGraphErrors(N,ev,amp,ev_e,amp_e);
 gr->SetMarkerStyle(20);
 gr->SetMarkerColor(kRed);
+gr->SetLineColor(kRed);
 gr->SetTitle("Magnetude");
 gr->GetYaxis()->SetTitle("");
 gr->GetXaxis()->SetTitle("Event");
@@ -91,16 +89,20 @@ gr->SetMarkerSize(0.7);
 TGraphErrors *fgr = new TGraphErrors(N,fev,famp,ev_e,famp_e);
 fgr->SetMarkerStyle(20);
 fgr->SetMarkerColor(kViolet);
+fgr->SetLineColor(kViolet);
 fgr->SetMarkerSize(0.7);
 
 gr->Draw("AP");
 fgr->Draw("Psame");
 
-c->cd(2);
+c->SaveAs("magnetiude.png");
 
+TCanvas *c1 = new TCanvas("c1","",900,500);
+c1->SetGridy();
 TGraphErrors *gi = new TGraphErrors(N,ev,phase,ev_e,phase_e);
 gi->SetMarkerStyle(20);
 gi->SetMarkerColor(kRed);
+gi->SetLineColor(kRed);
 gi->SetTitle("Phase");
 gi->GetYaxis()->SetTitle("");
 gi->GetXaxis()->SetTitle("Event");
@@ -110,16 +112,20 @@ gi->SetMarkerSize(0.7);
 TGraphErrors *fgi = new TGraphErrors(N,fev,fphase,ev_e,fphase_e);
 fgi->SetMarkerStyle(20);
 fgi->SetMarkerColor(kViolet);
+fgi->SetLineColor(kViolet);
 fgi->SetMarkerSize(0.7);
 
 gi->Draw("AP");
 fgi->Draw("Psame");
 
-c->cd(3);
+c1->SaveAs("phase.png");
 
+TCanvas *c2 = new TCanvas("c2","",900,500);
+c2->SetGridy();
 TGraphErrors *gsamp = new TGraphErrors(N,ev,shift_amp,ev_e,shift_amp_e);
 gsamp->SetMarkerStyle(20);
 gsamp->SetMarkerColor(kRed);
+gsamp->SetLineColor(kRed);
 gsamp->SetTitle("Shift of S-Wave Magnetude");
 gsamp->GetYaxis()->SetTitle("");
 gsamp->GetXaxis()->SetTitle("Event");
@@ -127,16 +133,19 @@ gsamp->SetMarkerSize(0.7);
 
 gsamp->Draw("AP");
 
-c->cd(4);
+c2->SaveAs("shiftmag.png");
 
+TCanvas *c3 = new TCanvas("c3","",900,500);
+c3->SetGridy();
 TGraphErrors *gsphase = new TGraphErrors(N,ev,shift_phase,ev_e,shift_phase_e);
 gsphase->SetMarkerStyle(20);
 gsphase->SetMarkerColor(kRed);
+gsphase->SetLineColor(kRed);
 gsphase->SetTitle("Shift of S-Wave Phase");
 gsphase->GetYaxis()->SetTitle("");
 gsphase->GetXaxis()->SetTitle("Event");
 gsphase->SetMarkerSize(0.7);
 gsphase->Draw("AP");
 
-c->SaveAs("Parameters.png");
+c3->SaveAs("shiftphase.png");
 }

@@ -17,7 +17,7 @@ double s12_max = (D_MASS   - d2_MASS)*(D_MASS - d2_MASS);
 double m12_min = s12_min;
 double m12_max = s12_max;
 
-int slices = 50;
+int slices = 60;
 
 TComplex plainBW(double *x, double *par) {
 
@@ -114,7 +114,7 @@ void PWACoefs(double val){
     for(int i = 0; i < slices; i++){
 
     	if(s<val){
-		s = m12_min + i*(1.5)*(val-m12_min)/(slices);
+		s = m12_min + i*(1.8)*(val-m12_min)/(slices);
 		temp++;
     	}else{
 	

@@ -155,8 +155,8 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
         emag = e2;
         ephs = e3;
 
-        Variable va(fmt::format("pwa_coef_{}_real", i), emag,0.001,-20.0,+20.0);
-        Variable vp(fmt::format("pwa_coef_{}_img", i), ephs,0.001,-20.0,+20.0);
+        Variable va(fmt::format("pwa_coef_{}_real", i), emag,0.001,-100.0,+100.0);
+        Variable vp(fmt::format("pwa_coef_{}_img", i), ephs,0.001,-100.0,+100.0);
 
         pwa_coefs_amp.push_back(va);
         pwa_coefs_phs.push_back(vp);
@@ -164,8 +164,8 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
 
     }
 
-    Variable swave_amp_real("swave_amp_real", 1.0);
-    Variable swave_amp_imag("swave_amp_imag", 0.0);
+    Variable swave_amp_real("swave_amp_real", 1.0,-100.0,+100.0);
+    Variable swave_amp_imag("swave_amp_imag", 0.0,-100.0,+100.0);
 
     if(fixAmp) {
         swave_amp_real.setValue(1.);
@@ -219,11 +219,8 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     //rho(770)
     Variable v_rho_Mass("rho_MASS",rho_MASS);
     Variable v_rho_Width("rho_WIDTH",rho_WIDTH);
-    Variable v_rho_amp_real("rho_amp_real",rho_amp*cos(rho_phase), 0.001, -10, +10);
-    Variable v_rho_amp_img("rho_amp_img",rho_amp*sin(rho_phase), 0.001, -10, +10);
-Variable v_rho_amp_real1("rho_amp_real",rho_amp*cos(rho_phase+M_PI), 0.001, -10, +10);
-    Variable v_rho_amp_img1("rho_amp_img",rho_amp*sin(rho_phase+M_PI), 0.001, -10, +10);
-
+    Variable v_rho_amp_real("rho_amp_real",rho_amp*cos(rho_phase), 0.001, -100.0, +100.0);
+    Variable v_rho_amp_img("rho_amp_img",rho_amp*sin(rho_phase), 0.001, -100.0, +100.0);
 
     v_rho_Mass.setFixed(true);
     v_rho_Width.setFixed(true);
@@ -231,66 +228,56 @@ Variable v_rho_amp_real1("rho_amp_real",rho_amp*cos(rho_phase+M_PI), 0.001, -10,
     //omega(782)
     Variable v_omega_Mass("omega_MASS",omega_MASS);
     Variable v_omega_Width("omega_WIDTH",omega_WIDTH);
-    Variable v_omega_amp_real("omega_amp_real",omega_amp*cos(omega_phase), 0.001, -10, +10);
-    Variable v_omega_amp_img("omega_amp_img",omega_amp*sin(omega_phase), 0.001, -10, +10);
+    Variable v_omega_amp_real("omega_amp_real",omega_amp*cos(omega_phase), 0.001, -100.0, +100.0);
+    Variable v_omega_amp_img("omega_amp_img",omega_amp*sin(omega_phase), 0.001, -100.0, +100.0);
 
     //f2(1270)
     Variable v_f2_Mass("f2_MASS",f2_MASS);
     Variable v_f2_Width("f2_WIDTH",f2_WIDTH);
-    Variable v_f2_amp_real("f2_amp_real",f2_amp*cos(f2_phase), 0.001, -10, +10);
-    Variable v_f2_amp_img("f2_amp_img",f2_amp*sin(f2_phase), 0.001, -10, +10);
+    Variable v_f2_amp_real("f2_amp_real",f2_amp*cos(f2_phase), 0.001, -100.0, +100.0);
+    Variable v_f2_amp_img("f2_amp_img",f2_amp*sin(f2_phase), 0.001, -100.0, +100.0);
 
     //sigma(480)
     Variable v_sigma_Mass("sigma_MASS",sigma_MASS);
     Variable v_sigma_Width("sigma_WIDTH",sigma_WIDTH);
-    Variable v_sigma_amp_real("sigma_amp_real",sigma_amp*cos(sigma_phase), 0.001, -10, +10);
-    Variable v_sigma_amp_img("sigma_amp_img",sigma_amp*sin(sigma_phase), 0.001, -10, +10);
+    Variable v_sigma_amp_real("sigma_amp_real",sigma_amp*cos(sigma_phase), 0.001, -100.0, +100.0);
+    Variable v_sigma_amp_img("sigma_amp_img",sigma_amp*sin(sigma_phase), 0.001, -100.0, +100.0);
 
     //f0(980)
     Variable v_f0_Mass("f0_MASS",f0_MASS);
     Variable v_f0_GPP("f0_GPP",f0_GPP);
     Variable v_f0_GKK("f0_GKK",f0_GKK);
-    Variable v_f0_amp_real("f0_amp_real",f0_amp*cos(f0_phase), 0.001, -10, +10);
-    Variable v_f0_amp_img("f0_amp_img",f0_amp*sin(f0_phase), 0.001, -10, +10);
+    Variable v_f0_amp_real("f0_amp_real",f0_amp*cos(f0_phase), 0.001, -100.0, +100.0);
+    Variable v_f0_amp_img("f0_amp_img",f0_amp*sin(f0_phase), 0.001, -100.0, +100.0);
 
     //NR
 
-    Variable nonr_amp_real("nonr_amp_real", 1.0, 0.001, -10, +10);
-    Variable nonr_amp_imag("nonr_amp_imag", 0.0, 0.001, -10, +10);
+    Variable nonr_amp_real("nonr_amp_real", 1.0, 0.001, -100.0, +100.0);
+    Variable nonr_amp_imag("nonr_amp_imag", 0.0, 0.001, -100.0, +100.0);
 
     //setting resonances
     ResonancePdf* rho_12 = new Resonances::GS("rho",v_rho_amp_real,v_rho_amp_img,v_rho_Mass,v_rho_Width,1,PAIR_12,true);
-    ResonancePdf* rho_13 = new Resonances::GS("rho",v_rho_amp_real1,v_rho_amp_img1,v_rho_Mass,v_rho_Width,1,PAIR_13);
-
+       
     ResonancePdf* omega_12 = new Resonances::RBW("omega",v_omega_amp_real,v_omega_amp_img,v_omega_Mass,v_omega_Width,1,PAIR_12,false);
-    ResonancePdf* omega_13 = new Resonances::RBW("omega",v_omega_amp_real,v_omega_amp_img,v_omega_Mass,v_omega_Width,1,PAIR_13);
-
+    
     ResonancePdf* f2_12 = new Resonances::RBW("f2",v_f2_amp_real,v_f2_amp_img,v_f2_Mass,v_f2_Width,2,PAIR_12,false);
-    ResonancePdf* f2_13 = new Resonances::RBW("f2",v_f2_amp_real,v_f2_amp_img,v_f2_Mass,v_f2_Width,2,PAIR_13);
-
+       
     ResonancePdf* sigma_12 = new Resonances::RBW("sigma",v_sigma_amp_real,v_sigma_amp_img,v_sigma_Mass,v_sigma_Width,(unsigned int)0,PAIR_12,true);
-    ResonancePdf* sigma_13 = new Resonances::RBW("sigma",v_sigma_amp_real,v_sigma_amp_img,v_sigma_Mass,v_sigma_Width,(unsigned int)0,PAIR_13);
-
-    ResonancePdf* f0_12 = new Resonances::FLATTE("f0",v_f0_amp_real,v_f0_amp_img,v_f0_Mass,v_f0_GPP,v_f0_GKK,PAIR_12,false);
-    ResonancePdf* f0_13 = new Resonances::FLATTE("f0",v_f0_amp_real,v_f0_amp_img,v_f0_Mass,v_f0_GPP,v_f0_GKK,PAIR_13,false);
-
+      
+    ResonancePdf* f0_12 = new Resonances::FLATTE("f0",v_f0_amp_real,v_f0_amp_img,v_f0_Mass,v_f0_GPP,v_f0_GKK,PAIR_12,true);
+      
     ResonancePdf *nonr = new Resonances::NonRes("nonr", nonr_amp_real, nonr_amp_imag);
 
     //MIPWA
-    ResonancePdf *swave_12 = loadPWAResonance(pwa_file, false);
+    ResonancePdf *swave_12 = loadPWAResonance(pwa_file, true);
 
     dtoppp.resonances.push_back(rho_12);
-    //dtoppp.resonances.push_back(rho_13);
-    //dtoppp.resonances.push_back(omega_12);
-    //dtoppp.resonances.push_back(omega_13);
-    //dtoppp.resonances.push_back(f2_12);
-    //dtoppp.resonances.push_back(f2_13);
-    dtoppp.resonances.push_back(sigma_12);
-    //dtoppp.resonances.push_back(sigma_13);
+   //dtoppp.resonances.push_back(omega_12);
+    dtoppp.resonances.push_back(f2_12);
+    //dtoppp.resonances.push_back(sigma_12);
     //dtoppp.resonances.push_back(f0_12);
-    //dtoppp.resonances.push_back(f0_13);
-    //dtoppp.resonances.push_back(nonr); 
-    //dtoppp.resonances.push_back(swave_12);
+   //dtoppp.resonances.push_back(nonr); 
+    dtoppp.resonances.push_back(swave_12);
 
     if(!eff) {
         // By default create a constant efficiency.
@@ -555,8 +542,8 @@ void saveParameters(const std::vector<ROOT::Minuit2::MinuitParameter> &param, st
 
 void runtoyfit(std::string name){
 
-    s12.setNumBins(1000);
-    s13.setNumBins(1000);
+    s12.setNumBins(2500);
+    s13.setNumBins(2500);
 
     gettoydata(name);
 
