@@ -14,6 +14,8 @@
 #include <TMinuit.h>
 #include <TNtuple.h>
 #include <TComplex.h>
+#include <TFile.h>
+#include <TTree.h>
 
 
 // System stuff
@@ -58,7 +60,9 @@ double d3_MASS  = pi_MASS;
 bool saveBkgPlot= false;
 bool saveEffPlot= false;
 bool doEffSwap  = true;
-bool toy        = true;
+bool toyOn = false;
+
+const double NevG = 1e4;
 
 fptype s12_min = POW2(d1_MASS  + d2_MASS);
 fptype s12_max = POW2(D_MASS   - d2_MASS);
@@ -70,6 +74,8 @@ Observable s13("s13",s13_min,s13_max);
 EventNumber eventNumber("eventNumber");
 
 DalitzPlotPdf* signaldalitz = nullptr;
+DalitzPlotPdf* bkgdalitz = nullptr;
+
 UnbinnedDataSet* Data = nullptr;
 
 std::vector<PdfBase *> comps;
@@ -84,14 +90,25 @@ Variable massSum("massSum", POW2(D_MASS) + POW2(d1_MASS) + POW2(d2_MASS) + POW2(
 const string pwa_file = "files/PWACOEFS.txt";
 
 // Data File
-const string data_path = "files/";
-const string data_name = "data";
-
+const string data_name = "files/DsPPP_TIS_PosTS_par_sPloted_large__MVA.root";
+const string tree_name = "sTree";
 
 //functions
 fptype cpuGetM23(fptype massPZ, fptype massPM) { return (massSum.getValue() - massPZ - massPM); }
 
 DalitzPlotPdf *makesignalpdf(GooPdf *eff = 0);
+void getdata(std::string name, bool toy = false);
+
+TH2F *weightHistogram    = nullptr;
+TH2F *bkgHistogram       = nullptr;
+TH2F *underlyingBins     = nullptr;
+
+
+
+
+
+
+
 
 void maketoydalitzdata(GooPdf* overallsignal,std::string name, size_t nEvents){
 
@@ -191,39 +208,39 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
 
 void createWeightHistogram() {
     TFile *f        = TFile::Open("files/effspline300.root");
-    weightHistogram = (TH2F *)f->Get("eff_spline");
+    TH2F *weightHistogram = (TH2F *)f->Get("eff_spline");
     weightHistogram->SetStats(false);
 }
 
 void createBackgroundHistogram() {
-    TFile *f     = TFile::Open("files/bkg_histo_300bins.root");
-    bkgHistogram = (TH2F *)f->Get("bkgHist_acc");
+    TFile *f     = TFile::Open(data_name.c_str());
+    TH2F *bkgHistogram = (TH2F *)f->Get("h0");
     bkgHistogram->SetStats(false);
 }
 
 GooPdf *makeEfficiencyPdf() {
 
     vector<Observable> lvars;
-    lvars.push_back(m12);
-    lvars.push_back(m13);
+    lvars.push_back(s12);
+    lvars.push_back(s13);
     BinnedDataSet *binEffData = new BinnedDataSet(lvars);
     createWeightHistogram();
 
     TRandom3 donram(0);
     for(int i = 0; i < NevG; i++) {
         do {
-            m12.setValue(donram.Uniform(m12.getLowerLimit(), m12.getUpperLimit()));
-            m13.setValue(donram.Uniform(m13.getLowerLimit(), m13.getUpperLimit()));
-        } while(!inDalitz(m12.getValue(), m13.getValue(), MMass, D1Mass, D2Mass, D3Mass));
+            s12.setValue(donram.Uniform(s12.getLowerLimit(), s12.getUpperLimit()));
+            s13.setValue(donram.Uniform(s13.getLowerLimit(), s13.getUpperLimit()));
+        } while(!inDalitz(s12.getValue(), s13.getValue(), D_MASS, d1_MASS, d2_MASS, d3_MASS));
 
-        double weight = weightHistogram->GetBinContent(weightHistogram->FindBin(m12.getValue(), m13.getValue()));
+        double weight = weightHistogram->GetBinContent(weightHistogram->FindBin(s12.getValue(), s13.getValue()));
         binEffData->addWeightedEvent(weight);
 
         if(doEffSwap) {
-            double swapmass = m12.getValue();
-            m12.setValue(m13.getValue());
-            m13.setValue(swapmass);
-            weight = weightHistogram->GetBinContent(weightHistogram->FindBin(m12.getValue(), m13.getValue()));
+            double swapmass = s12.getValue();
+            s12.setValue(s13.getValue());
+            s13.setValue(swapmass);
+            weight = weightHistogram->GetBinContent(weightHistogram->FindBin(s12.getValue(), s13.getValue()));
             binEffData->addWeightedEvent(weight);
         }
     }
@@ -241,26 +258,26 @@ GooPdf *makeEfficiencyPdf() {
     return ret;
 }
 
-GooPdf *makeBackgroundPdf() {
+GooPdf* makeBackgroundPdf() {
 
-    BinnedDataSet *binBkgData = new BinnedDataSet({m12, m13});
+    BinnedDataSet *binBkgData = new BinnedDataSet({s12, s13});
     createBackgroundHistogram();
 
     TRandom3 donram(0);
     for(int i = 0; i < NevG; i++) {
         do {
-            m12.setValue(donram.Uniform(m12.getLowerLimit(), m12.getUpperLimit()));
-            m13.setValue(donram.Uniform(m13.getLowerLimit(), m13.getUpperLimit()));
-        } while(!inDalitz(m12.getValue(), m13.getValue(), MMass, D1Mass, D2Mass, D3Mass));
+            s12.setValue(donram.Uniform(s12.getLowerLimit(), s12.getUpperLimit()));
+            s13.setValue(donram.Uniform(s13.getLowerLimit(), s13.getUpperLimit()));
+        } while(!inDalitz(s12.getValue(), s13.getValue(), D_MASS, d1_MASS, d2_MASS, d3_MASS));
 
-        double weight = bkgHistogram->GetBinContent(bkgHistogram->FindBin(m12.getValue(), m13.getValue()));
+        double weight = bkgHistogram->GetBinContent(bkgHistogram->FindBin(s12.getValue(), s13.getValue()));
         binBkgData->addWeightedEvent(weight);
 
         if(doEffSwap) {
-            double swapmass = m12.getValue();
-            m12.setValue(m13.getValue());
-            m13.setValue(swapmass);
-            weight = bkgHistogram->GetBinContent(bkgHistogram->FindBin(m12.getValue(), m13.getValue()));
+            double swapmass = s12.getValue();
+            s12.setValue(s13.getValue());
+            s13.setValue(swapmass);
+            weight = bkgHistogram->GetBinContent(bkgHistogram->FindBin(s12.getValue(), s13.getValue()));
             binBkgData->addWeightedEvent(weight);
         }
     }
@@ -275,6 +292,47 @@ GooPdf *makeBackgroundPdf() {
     Variable *effSmoothing  = new Variable("effSmoothing", 0);
     SmoothHistogramPdf *ret = new SmoothHistogramPdf("efficiency", binBkgData, *effSmoothing);
     return ret;
+}
+
+DalitzPlotPdf* makebkgpdf(GooPdf* bkgeff){
+
+    double sigma_MASS  = 0.480;
+    double sigma_WIDTH = 0.350;
+    double sigma_amp   = 1.0;
+    double sigma_phase = 0.0;
+
+    //sigma(480)
+    Variable v_sigma_Mass("sigma_MASS",sigma_MASS);
+    Variable v_sigma_Width("sigma_WIDTH",sigma_WIDTH);
+    Variable v_sigma_amp_real("sigma_amp_real",sigma_amp*cos(sigma_phase), 0.001, -100.0, +100.0);
+    Variable v_sigma_amp_img("sigma_amp_img",sigma_amp*sin(sigma_phase), 0.001, -100.0, +100.0);
+
+    DecayInfo3 dtoppp;
+
+    ResonancePdf* sigma_12 = new Resonances::RBW("sigma",v_sigma_amp_real,v_sigma_amp_img,v_sigma_Mass,v_sigma_Width,(unsigned int)0,PAIR_12,true);
+
+    dtoppp.resonances.push_back(sigma_12);
+
+
+    if(!bkgeff) {
+        // By default create a constant efficiency.
+        vector<Variable> offsets;
+        vector<Observable> observables;
+        vector<Variable> coefficients;
+        Variable constantOne("constantO", 1);
+        Variable constantZero("constantz", 0);
+
+        observables.push_back(s12);
+        observables.push_back(s13);
+        offsets.push_back(constantZero);
+        offsets.push_back(constantZero);
+        coefficients.push_back(constantOne);
+        bkgeff = new PolynomialPdf("constantEff", observables, coefficients, offsets, 0); //No efficiency
+    }
+
+
+    return new DalitzPlotPdf("bkgPDF", s12, s13, eventNumber, dtoppp, bkgeff);
+
 }
 
 
@@ -356,7 +414,7 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     //setting resonances
     ResonancePdf* rho_12 = new Resonances::GS("rho",v_rho_amp_real,v_rho_amp_img,v_rho_Mass,v_rho_Width,1,PAIR_12,true);
        
-    ResonancePdf* omega_12 = new Resonances::RBW("omega",v_omega_amp_real,v_omega_amp_img,v_omega_Mass,v_omega_Width,1,PAIR_12,false);
+    ResonancePdf* omega_12 = new Resonances::RBW("omega",v_omega_amp_real,v_omega_amp_img,v_omega_Mass,v_omega_Width,1,PAIR_12,true);
     
     ResonancePdf* f2_12 = new Resonances::RBW("f2",v_f2_amp_real,v_f2_amp_img,v_f2_Mass,v_f2_Width,2,PAIR_12,false);
        
@@ -370,12 +428,12 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     ResonancePdf *swave_12 = loadPWAResonance(pwa_file, true);
 
     dtoppp.resonances.push_back(rho_12);
-   //dtoppp.resonances.push_back(omega_12);
-    dtoppp.resonances.push_back(f2_12);
+    dtoppp.resonances.push_back(omega_12);
+    //dtoppp.resonances.push_back(f2_12);
     //dtoppp.resonances.push_back(sigma_12);
-    //dtoppp.resonances.push_back(f0_12);
-   //dtoppp.resonances.push_back(nonr); 
-    dtoppp.resonances.push_back(swave_12);
+    dtoppp.resonances.push_back(f0_12);
+    dtoppp.resonances.push_back(nonr);
+    //dtoppp.resonances.push_back(swave_12);
 
     if(!eff) {
         // By default create a constant efficiency.
@@ -396,47 +454,58 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     return new DalitzPlotPdf("signalPDF", s12, s13, eventNumber, dtoppp, eff);
 }
 
-void getdata(std::string name,bool toy){
+void getdata(std::string name, bool toy){
 
     std::cout << "get data begin!" << '\n';
 
     Data = new UnbinnedDataSet({s12,s13,eventNumber});
 
-if(toy){
+if(toy)
+{
     std::ifstream reader(name.c_str());
 
 
     while(reader >> eventNumber >> s12 >> s13){
-//	if(s12<s13){
 
         	Data->addEvent();
-//	}
+
     }
 
     reader.close();
-}else{
+}
+else
+    {
 
-    TFile *f = new TFile(data_path.c_str()+data_name.c_str()+".root");
-    TTree *t = (TTree*)f->Get(+tree_name.c_str());
+    TFile *f = TFile::Open(data_name.c_str());
+    TTree *t = (TTree *)f->Get("sTree");
 
-    double s12, s13;
+    double _s12, _s13;
 
-    Long64_t jentry;
-
-    t->Branch("s12",&s12,"s12/D");
-    t->Branch("s13",&s13,"s13/D");
+    t->SetBranchAddress("s12_pipi_DTF",&_s12);
+    t->SetBranchAddress("s13_pipi_DTF",&_s13);
    
 
-    for(jentry=0; jentry < t->GetEntries() ; jentry++){
-		
-		t->GetEntry(jentry); 
-		eventNumber.setValue(jentry);
-		Data->addEvent();
+    for(size_t i = 0; i < 100000 ; i++){
+
+       // if(_s12>s12_min && _s12<s12_max  && _s13>s13_min && _s13<s13_max) {
+
+            t->GetEntry(i);
+            s12.setValue(_s12);
+            s13.setValue(_s13);
+
+            //cout << i << "\t" << s12.getValue() << endl;
+
+            eventNumber.setValue(i);
+            Data->addEvent();
+
+       // }else{
+      //      continue;
+      //  }
 
     }
 
 
-    f->close();
+    f->Close();
 
 }
     
@@ -615,7 +684,7 @@ void runMakeToyDalitzPdfPlots(std::string name){
     s12.setNumBins(1000);
     s13.setNumBins(1000);
 
-    getdata(name,toy);
+    getdata(name,toyOn);
 
     if(signaldalitz == nullptr){
         signaldalitz = makesignalpdf(0);
@@ -668,20 +737,24 @@ void saveParameters(const std::vector<ROOT::Minuit2::MinuitParameter> &param, st
 
 void runtoyfit(std::string name){
 
-    s12.setNumBins(2500);
-    s13.setNumBins(2500);
+    s12.setNumBins(1500);
+    s13.setNumBins(1500);
 
-    getdata(name,toy);
+    getdata(name,toyOn);
 
     GOOFIT_INFO("Number of Events in dataset: {}", Data->getNumEvents());
 
     if(signaldalitz == nullptr){
     signaldalitz = makesignalpdf(0);
+    bkgdalitz = makebkgpdf(0);
     }
 
     comps.clear();
     comps.push_back(signaldalitz);
+    comps.push_back(bkgdalitz);
     ProdPdf *overallsignal = new ProdPdf("overallsignal",comps);
+
+
     overallsignal->setData(Data);
     signaldalitz->setDataSize(Data->getNumEvents());
 
