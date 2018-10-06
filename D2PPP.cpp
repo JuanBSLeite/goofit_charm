@@ -39,7 +39,9 @@
 #include <goofit/UnbinnedDataSet.h>
 #include <goofit/Variable.h>
 #include <goofit/PDFs/physics/DalitzPlotter.h>
-
+#include <goofit/PDFs/combine/EventWeightedAddPdf.h>
+#include <goofit/PDFs/combine/CompositePdf.h>
+#include <goofit/PDFs/physics/IncoherentSumPdf.h>
 
 #include <thrust/transform_reduce.h>
 
@@ -57,12 +59,11 @@ double d1_MASS  = pi_MASS;  //daughter 1 mass
 double d2_MASS  = pi_MASS;
 double d3_MASS  = pi_MASS;
 
-bool saveBkgPlot= false;
-bool saveEffPlot= false;
+bool saveBkgPlot= true;
+bool saveEffPlot= true;
 bool doEffSwap  = true;
-bool toyOn = false;
 
-const double NevG = 1e4;
+const double NevG = 1e7;
 
 fptype s12_min = POW2(d1_MASS  + d2_MASS);
 fptype s12_max = POW2(D_MASS   - d2_MASS);
@@ -74,7 +75,7 @@ Observable s13("s13",s13_min,s13_max);
 EventNumber eventNumber("eventNumber");
 
 DalitzPlotPdf* signaldalitz = nullptr;
-DalitzPlotPdf* bkgdalitz = nullptr;
+SmoothHistogramPdf* bkgdalitz = nullptr;
 
 UnbinnedDataSet* Data = nullptr;
 
@@ -129,7 +130,7 @@ Data = new UnbinnedDataSet({s12,s13,eventNumber});
         std::cout << "PDF plotted" << '\n';
     }
 
-        dp.fillDataSetMC(*Data,nEvents);
+        dp.fillDataSetMC(*Data,nEvents,150);
         TH2F th2("toyData", "", 200, s12.getLowerLimit(), s12.getUpperLimit(), 200, s13.getLowerLimit(),
                          s13.getUpperLimit());
     th2.GetXaxis()->SetTitle("#pi^{-}#pi^{+} [Gev/c^{2}]");
@@ -206,25 +207,17 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
     return swave_12;
 } 
 
-void createWeightHistogram() {
-    TFile *f        = TFile::Open("files/effspline300.root");
-    TH2F *weightHistogram = (TH2F *)f->Get("eff_spline");
-    weightHistogram->SetStats(false);
-}
 
-void createBackgroundHistogram() {
-    TFile *f     = TFile::Open(data_name.c_str());
-    TH2F *bkgHistogram = (TH2F *)f->Get("h0");
-    bkgHistogram->SetStats(false);
-}
-
-GooPdf *makeEfficiencyPdf() {
+SmoothHistogramPdf* makeEfficiencyPdf() {
 
     vector<Observable> lvars;
     lvars.push_back(s12);
     lvars.push_back(s13);
     BinnedDataSet *binEffData = new BinnedDataSet(lvars);
-    createWeightHistogram();
+    
+    TFile *f     = TFile::Open(data_name.c_str());
+    TH2F *bkgHistogram = (TH2F *)f->Get("h0");
+    bkgHistogram->SetStats(false);
 
     TRandom3 donram(0);
     for(int i = 0; i < NevG; i++) {
@@ -253,15 +246,17 @@ GooPdf *makeEfficiencyPdf() {
         foo.SaveAs("plots/efficiency_bins_log.png");
     }
     // Smooth
-    Variable effSmoothing("effSmoothing", 0);
+    Variable effSmoothing("effSmoothing", 1);
     SmoothHistogramPdf *ret = new SmoothHistogramPdf("efficiency", binEffData, effSmoothing);
     return ret;
 }
 
-GooPdf* makeBackgroundPdf() {
+SmoothHistogramPdf* makeBackgroundPdf() {
 
     BinnedDataSet *binBkgData = new BinnedDataSet({s12, s13});
-    createBackgroundHistogram();
+    
+    TFile *f = new TFile(data_name.c_str());
+    TH2F* bkgHistogram = (TH2F*)f->Get("h1");
 
     TRandom3 donram(0);
     for(int i = 0; i < NevG; i++) {
@@ -289,51 +284,14 @@ GooPdf* makeBackgroundPdf() {
         foo.SetLogz(true);
         foo.SaveAs("plots/background_bins_log.png");
     }
-    Variable *effSmoothing  = new Variable("effSmoothing", 0);
+    Variable *effSmoothing  = new Variable("effSmoothing", 1);
     SmoothHistogramPdf *ret = new SmoothHistogramPdf("efficiency", binBkgData, *effSmoothing);
+
+
     return ret;
 }
 
-DalitzPlotPdf* makebkgpdf(GooPdf* bkgeff){
 
-    double sigma_MASS  = 0.480;
-    double sigma_WIDTH = 0.350;
-    double sigma_amp   = 1.0;
-    double sigma_phase = 0.0;
-
-    //sigma(480)
-    Variable v_sigma_Mass("sigma_MASS",sigma_MASS);
-    Variable v_sigma_Width("sigma_WIDTH",sigma_WIDTH);
-    Variable v_sigma_amp_real("sigma_amp_real",sigma_amp*cos(sigma_phase), 0.001, -100.0, +100.0);
-    Variable v_sigma_amp_img("sigma_amp_img",sigma_amp*sin(sigma_phase), 0.001, -100.0, +100.0);
-
-    DecayInfo3 dtoppp;
-
-    ResonancePdf* sigma_12 = new Resonances::RBW("sigma",v_sigma_amp_real,v_sigma_amp_img,v_sigma_Mass,v_sigma_Width,(unsigned int)0,PAIR_12,true);
-
-    dtoppp.resonances.push_back(sigma_12);
-
-
-    if(!bkgeff) {
-        // By default create a constant efficiency.
-        vector<Variable> offsets;
-        vector<Observable> observables;
-        vector<Variable> coefficients;
-        Variable constantOne("constantO", 1);
-        Variable constantZero("constantz", 0);
-
-        observables.push_back(s12);
-        observables.push_back(s13);
-        offsets.push_back(constantZero);
-        offsets.push_back(constantZero);
-        coefficients.push_back(constantOne);
-        bkgeff = new PolynomialPdf("constantEff", observables, coefficients, offsets, 0); //No efficiency
-    }
-
-
-    return new DalitzPlotPdf("bkgPDF", s12, s13, eventNumber, dtoppp, bkgeff);
-
-}
 
 
 DalitzPlotPdf* makesignalpdf(GooPdf* eff){
@@ -366,11 +324,17 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     double sigma_amp   = 1.0;
     double sigma_phase = 0.0;
 
-    double f0_MASS     = 0.965;
-    double f0_GPP      = 0.165;
-    double f0_GKK      = 4.21*f0_GPP;
-    double f0_amp      = 2.0;
-    double f0_phase    = 0.0;
+    double f0_980_MASS     = 0.965;
+    double f0_980_GPP     = 0.165;
+    double f0_980_GKK     = 4.21*f0_980_GPP;
+    double f0_980_amp     = 2.0;
+    double f0_980_phase    = 0.0;
+
+    double f0_1500_MASS     = 1.504;
+    double f0_1500_WIDTH    = 0.109;
+    double f0_1500_amp      = 2.0;
+    double f0_1500_phase    = 0.0;
+
 
     //rho(770)
     Variable v_rho_Mass("rho_MASS",rho_MASS);
@@ -387,6 +351,9 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     Variable v_omega_amp_real("omega_amp_real",omega_amp*cos(omega_phase), 0.001, -100.0, +100.0);
     Variable v_omega_amp_img("omega_amp_img",omega_amp*sin(omega_phase), 0.001, -100.0, +100.0);
 
+    v_omega_Mass.setFixed(true);
+    v_omega_Width.setFixed(true);
+
     //f2(1270)
     Variable v_f2_Mass("f2_MASS",f2_MASS);
     Variable v_f2_Width("f2_WIDTH",f2_WIDTH);
@@ -400,14 +367,20 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     Variable v_sigma_amp_img("sigma_amp_img",sigma_amp*sin(sigma_phase), 0.001, -100.0, +100.0);
 
     //f0(980)
-    Variable v_f0_Mass("f0_MASS",f0_MASS);
-    Variable v_f0_GPP("f0_GPP",f0_GPP);
-    Variable v_f0_GKK("f0_GKK",f0_GKK);
-    Variable v_f0_amp_real("f0_amp_real",f0_amp*cos(f0_phase), 0.001, -100.0, +100.0);
-    Variable v_f0_amp_img("f0_amp_img",f0_amp*sin(f0_phase), 0.001, -100.0, +100.0);
+    Variable v_f0_980_Mass("f0_980_MASS",f0_980_MASS);
+    Variable v_f0_980_GPP("f0_980_GPP",f0_980_GPP);
+    Variable v_f0_980_GKK("f0_980_GKK",f0_980_GKK);
+    Variable v_f0_980_amp_real("f0_980_amp_real",f0_980_amp*cos(f0_980_phase), 0.001, -100.0, +100.0);
+    Variable v_f0_980_amp_img("f0_980_amp_img",f0_980_amp*sin(f0_980_phase), 0.001, -100.0, +100.0);
+
+    //f0(1500)
+    Variable v_f0_1500_Mass("f0_1500_MASS",f0_1500_MASS);
+    Variable v_f0_1500_Width("f0_1500_Width",f0_1500_WIDTH);
+    Variable v_f0_1500_amp_real("f0_amp_1500_real",f0_1500_amp*cos(f0_1500_phase), 0.001, -100.0, +100.0);
+    Variable v_f0_1500_amp_img("f0_1500_amp_img",f0_1500_amp*sin(f0_1500_phase), 0.001, -100.0, +100.0);
+
 
     //NR
-
     Variable nonr_amp_real("nonr_amp_real", 1.0, 0.001, -100.0, +100.0);
     Variable nonr_amp_imag("nonr_amp_imag", 0.0, 0.001, -100.0, +100.0);
 
@@ -419,19 +392,22 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     ResonancePdf* f2_12 = new Resonances::RBW("f2",v_f2_amp_real,v_f2_amp_img,v_f2_Mass,v_f2_Width,2,PAIR_12,false);
        
     ResonancePdf* sigma_12 = new Resonances::RBW("sigma",v_sigma_amp_real,v_sigma_amp_img,v_sigma_Mass,v_sigma_Width,(unsigned int)0,PAIR_12,true);
+   
+    ResonancePdf* f0_1500_12 = new Resonances::RBW("f0_1500_12",v_f0_1500_amp_real,v_f0_1500_amp_img,v_f0_1500_Mass,v_f0_1500_Width,(unsigned int)0,PAIR_12,true);
       
-    ResonancePdf* f0_12 = new Resonances::FLATTE("f0",v_f0_amp_real,v_f0_amp_img,v_f0_Mass,v_f0_GPP,v_f0_GKK,PAIR_12,true);
+    ResonancePdf* f0_980_12 = new Resonances::FLATTE("f0_980",v_f0_980_amp_real,v_f0_980_amp_img,v_f0_980_Mass,v_f0_980_GPP,v_f0_980_GKK,PAIR_12,true);
       
     ResonancePdf *nonr = new Resonances::NonRes("nonr", nonr_amp_real, nonr_amp_imag);
 
     //MIPWA
     ResonancePdf *swave_12 = loadPWAResonance(pwa_file, true);
 
-    dtoppp.resonances.push_back(rho_12);
-    dtoppp.resonances.push_back(omega_12);
+   //dtoppp.resonances.push_back(rho_12);
+    //dtoppp.resonances.push_back(omega_12);
     //dtoppp.resonances.push_back(f2_12);
     //dtoppp.resonances.push_back(sigma_12);
-    dtoppp.resonances.push_back(f0_12);
+    //dtoppp.resonances.push_back(f0_980_12);
+    //dtoppp.resonances.push_back(f0_1500_12);
     dtoppp.resonances.push_back(nonr);
     //dtoppp.resonances.push_back(swave_12);
 
@@ -454,13 +430,17 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     return new DalitzPlotPdf("signalPDF", s12, s13, eventNumber, dtoppp, eff);
 }
 
-void getdata(std::string name, bool toy){
+
+
+
+
+void getdata(std::string name, bool toyOn){
 
     std::cout << "get data begin!" << '\n';
 
     Data = new UnbinnedDataSet({s12,s13,eventNumber});
 
-if(toy)
+if(toyOn)
 {
     std::ifstream reader(name.c_str());
 
@@ -485,7 +465,7 @@ else
     t->SetBranchAddress("s13_pipi_DTF",&_s13);
    
 
-    for(size_t i = 0; i < 100000 ; i++){
+    for(size_t i = 0; i <100000 ; i++){
 
        // if(_s12>s12_min && _s12<s12_max  && _s13>s13_min && _s13<s13_max) {
 
@@ -512,17 +492,29 @@ else
     std::cout << "get data end!" << '\n';
 }
 
-void runtoygen(std::string name, size_t events){
+void runtoygen(std::string name, size_t events, bool bkgOn){
 
     s12.setNumBins(1500);
     s13.setNumBins(1500);
 
     signaldalitz = makesignalpdf(0);
+    bkgdalitz = makeBackgroundPdf();
 
-    std::cout << "Creating Overall PDF" << '\n';
-    ProdPdf* overallSignal = new ProdPdf("overallSignal",{signaldalitz});
+    bkgdalitz->setParameterConstantness(true);
+
+    Variable constant("constant",1);
+    std::vector<Variable> weights;
+    weights.push_back(constant);
+    
+    comps.clear();
+    comps.push_back(signaldalitz);
+ 	   comps.push_back(bkgdalitz);
+    
+    AddPdf* overallPdf = new AddPdf("overallPdf",weights,comps);
+    
+    
     {
-        maketoydalitzdata(overallSignal,name,events);
+        maketoydalitzdata(overallPdf,name,events);
     }
 }
 
@@ -679,24 +671,33 @@ void makeToyDalitzPdfPlots(GooPdf *overallSignal, string plotdir = "plots") {
     drawFitPlotsWithPulls(&s23_dat_hist, &s23_pdf_hist, plotdir);
 }
 
-void runMakeToyDalitzPdfPlots(std::string name){
+void runMakeToyDalitzPdfPlots(std::string name, bool bkgOn, bool toyOn){
 
-    s12.setNumBins(1000);
-    s13.setNumBins(1000);
+    s12.setNumBins(1500);
+    s13.setNumBins(1500);
 
     getdata(name,toyOn);
 
-    if(signaldalitz == nullptr){
-        signaldalitz = makesignalpdf(0);
-        }
+    signaldalitz = makesignalpdf(0);
+    bkgdalitz = makeBackgroundPdf();
+
+    bkgdalitz->setParameterConstantness(true);
+
+    Variable constant("constant",1);
+    std::vector<Variable> weights;
+    weights.push_back(constant);
     
     comps.clear();
     comps.push_back(signaldalitz);
-    ProdPdf *overallsignal = new ProdPdf("overallsignal",comps);
-    overallsignal->setData(Data);
+    if(bkgOn){
+    comps.push_back(bkgdalitz);
+    }
+
+    AddPdf* overallPdf = new AddPdf("overallPdf",weights,comps);
+    overallPdf->setData(Data);
     signaldalitz->setDataSize(Data->getNumEvents());
 
-    makeToyDalitzPdfPlots(overallsignal);
+    makeToyDalitzPdfPlots(overallPdf);
 
 }
 
@@ -735,37 +736,41 @@ void saveParameters(const std::vector<ROOT::Minuit2::MinuitParameter> &param, st
 
 
 
-void runtoyfit(std::string name){
+void runtoyfit(std::string name,bool bkgOn,bool toyOn) {
 
     s12.setNumBins(1500);
     s13.setNumBins(1500);
 
-    getdata(name,toyOn);
+    getdata(name, toyOn);
 
     GOOFIT_INFO("Number of Events in dataset: {}", Data->getNumEvents());
-
-    if(signaldalitz == nullptr){
+ 
     signaldalitz = makesignalpdf(0);
-    bkgdalitz = makebkgpdf(0);
-    }
+    bkgdalitz = makeBackgroundPdf();
 
+    bkgdalitz->setParameterConstantness(true);
+
+    Variable constant("constant",1);
+    std::vector<Variable> weights;
+    weights.push_back(constant);
+    
     comps.clear();
     comps.push_back(signaldalitz);
+    if(bkgOn){
     comps.push_back(bkgdalitz);
-    ProdPdf *overallsignal = new ProdPdf("overallsignal",comps);
+    }
 
-
-    overallsignal->setData(Data);
+    AddPdf* overallPdf = new AddPdf("overallPdf",weights,comps);
+    overallPdf->setData(Data);
     signaldalitz->setDataSize(Data->getNumEvents());
 
-    FitManagerMinuit2 fitter(overallsignal);
+    FitManagerMinuit2 fitter(overallPdf);
     fitter.setVerbosity(3);
-
 
 
     auto param = fitter.getParams()->Parameters();
 
-    saveParameters(param,"Parametros_iniciais.txt");
+    saveParameters(param, "Parametros_iniciais.txt");
 
 
     auto func_min = fitter.fit();
@@ -777,13 +782,47 @@ void runtoyfit(std::string name){
 
     PrintFF(ff);
 
-    makeToyDalitzPdfPlots(overallsignal);
+    //makeToyDalitzPdfPlots(overallPdf,bkgOn,toyOn);
 
-    saveParameters(param2,"Parametros_fit.txt");
+    saveParameters(param2, "Parametros_fit.txt");
 
 
 }
 
+void rundatafit(std::string name){
+
+    s12.setNumBins(1500);
+    s13.setNumBins(1500);
+
+    getdata(name,false);
+
+    GOOFIT_INFO("Number of Events in dataset: {}", Data->getNumEvents());
+
+    signaldalitz = makesignalpdf(0);
+    bkgdalitz = makeBackgroundPdf();
+
+    bkgdalitz->setParameterConstantness(true);
+
+    Variable constant("constant",1);
+    std::vector<Variable> weights;
+    weights.push_back(constant);
+    
+    comps.clear();
+    comps.push_back(signaldalitz);
+    comps.push_back(bkgdalitz);
+
+    AddPdf* overallPdf = new AddPdf("overallPdf",weights,comps);
+    overallPdf->setData(Data);
+    signaldalitz->setDataSize(Data->getNumEvents());
+
+    FitManagerMinuit2 fitter(overallPdf);
+    fitter.setVerbosity(3);
+
+    auto func_min = fitter.fit();
+    makeToyDalitzPdfPlots(overallPdf);
+
+
+}
 
 
 int main(int argc, char **argv){
@@ -791,12 +830,23 @@ int main(int argc, char **argv){
     GooFit::Application app{"D2PPP",argc,argv};
 
     size_t  nevents = 100000;
+    bool bkgOn = false;
+    bool toyOn = true;
+
     auto gen = app.add_subcommand("gen","generate toy data");
     gen->add_option("-e,--events",nevents,"The number of events to generate",true);
+    gen->add_option("-b,--background",bkgOn,"Include background histogram in the model",true);
 
-    auto fit = app.add_subcommand("fit","fit toy data");
+    auto toyfit = app.add_subcommand("fittoy","fit toy data");
+    toyfit->add_option("-b,--background",bkgOn,"Include background histogram in the model",true);
+    toyfit->add_option("-t,--toy",toyOn,"Include background histogram in the model",true);
+
+
+    auto datafit = app.add_subcommand("fitdata","fit data");
 
     auto plot = app.add_subcommand("plot","plot signal");
+    plot->add_option("-b,--background",bkgOn,"Include background histogram in the model",true);
+
 
     GOOFIT_PARSE(app);
 
@@ -807,17 +857,22 @@ int main(int argc, char **argv){
 
     if(*gen){
         CLI::AutoTimer timer("MC Generation");
-        runtoygen("D2PPP_toy.txt",nevents);
+        runtoygen("D2PPP_toy.txt",nevents,bkgOn);
     }
 
-    if(*fit){
+    if(*toyfit){
         CLI::AutoTimer timer("FIT");
-        runtoyfit("D2PPP_toy.txt");
+        runtoyfit("D2PPP_toy.txt",bkgOn,toyOn);
+    }
+
+    if(*datafit){
+        CLI::AutoTimer timer("FIT");
+        rundatafit("D2PPP_toy.txt");
     }
 
     if(*plot){
         CLI::AutoTimer timer("FIT");
-        runMakeToyDalitzPdfPlots("D2PPP_toy.txt");
+        runMakeToyDalitzPdfPlots("D2PPP_toy.txt",bkgOn,toyOn);
     }
 
 }
