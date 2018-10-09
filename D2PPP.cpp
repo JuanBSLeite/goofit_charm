@@ -62,8 +62,10 @@ double d3_MASS  = pi_MASS;
 bool saveBkgPlot= true;
 bool saveEffPlot= true;
 bool doEffSwap  = true;
+bool toyOn      = true;
+bool bkgOn      = false;
 
-const double NevG = 1e7;
+const double NevG = 1e7; 
 
 fptype s12_min = POW2(d1_MASS  + d2_MASS);
 fptype s12_max = POW2(D_MASS   - d2_MASS);
@@ -98,7 +100,7 @@ const string tree_name = "sTree";
 fptype cpuGetM23(fptype massPZ, fptype massPM) { return (massSum.getValue() - massPZ - massPM); }
 
 DalitzPlotPdf *makesignalpdf(GooPdf *eff = 0);
-void getdata(std::string name, bool toy = false);
+void getdata(std::string name);
 
 TH2F *weightHistogram    = nullptr;
 TH2F *bkgHistogram       = nullptr;
@@ -130,7 +132,7 @@ Data = new UnbinnedDataSet({s12,s13,eventNumber});
         std::cout << "PDF plotted" << '\n';
     }
 
-        dp.fillDataSetMC(*Data,nEvents,150);
+        dp.fillDataSetMC(*Data,nEvents);
         TH2F th2("toyData", "", 200, s12.getLowerLimit(), s12.getUpperLimit(), 200, s13.getLowerLimit(),
                          s13.getUpperLimit());
     th2.GetXaxis()->SetTitle("#pi^{-}#pi^{+} [Gev/c^{2}]");
@@ -402,14 +404,14 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     //MIPWA
     ResonancePdf *swave_12 = loadPWAResonance(pwa_file, true);
 
-   //dtoppp.resonances.push_back(rho_12);
+    //dtoppp.resonances.push_back(rho_12);
     //dtoppp.resonances.push_back(omega_12);
     //dtoppp.resonances.push_back(f2_12);
     //dtoppp.resonances.push_back(sigma_12);
     //dtoppp.resonances.push_back(f0_980_12);
     //dtoppp.resonances.push_back(f0_1500_12);
-    dtoppp.resonances.push_back(nonr);
-    //dtoppp.resonances.push_back(swave_12);
+    //dtoppp.resonances.push_back(nonr);
+    dtoppp.resonances.push_back(swave_12);
 
     if(!eff) {
         // By default create a constant efficiency.
@@ -434,7 +436,7 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
 
 
 
-void getdata(std::string name, bool toyOn){
+void getdata(std::string name){
 
     std::cout << "get data begin!" << '\n';
 
@@ -492,15 +494,13 @@ else
     std::cout << "get data end!" << '\n';
 }
 
-void runtoygen(std::string name, size_t events, bool bkgOn){
+void runtoygen(std::string name, size_t events){
 
     s12.setNumBins(1500);
     s13.setNumBins(1500);
 
     signaldalitz = makesignalpdf(0);
-    bkgdalitz = makeBackgroundPdf();
-
-    bkgdalitz->setParameterConstantness(true);
+    
 
     Variable constant("constant",1);
     std::vector<Variable> weights;
@@ -508,7 +508,11 @@ void runtoygen(std::string name, size_t events, bool bkgOn){
     
     comps.clear();
     comps.push_back(signaldalitz);
- 	   comps.push_back(bkgdalitz);
+    if(bkgOn){
+        bkgdalitz = makeBackgroundPdf();
+        bkgdalitz->setParameterConstantness(true);
+ 	    comps.push_back(bkgdalitz);
+    }
     
     AddPdf* overallPdf = new AddPdf("overallPdf",weights,comps);
     
@@ -671,12 +675,12 @@ void makeToyDalitzPdfPlots(GooPdf *overallSignal, string plotdir = "plots") {
     drawFitPlotsWithPulls(&s23_dat_hist, &s23_pdf_hist, plotdir);
 }
 
-void runMakeToyDalitzPdfPlots(std::string name, bool bkgOn, bool toyOn){
+void runMakeToyDalitzPdfPlots(std::string name){
 
     s12.setNumBins(1500);
     s13.setNumBins(1500);
 
-    getdata(name,toyOn);
+    getdata(name);
 
     signaldalitz = makesignalpdf(0);
     bkgdalitz = makeBackgroundPdf();
@@ -736,19 +740,17 @@ void saveParameters(const std::vector<ROOT::Minuit2::MinuitParameter> &param, st
 
 
 
-void runtoyfit(std::string name,bool bkgOn,bool toyOn) {
+void runtoyfit(std::string name) {
 
     s12.setNumBins(1500);
     s13.setNumBins(1500);
 
-    getdata(name, toyOn);
+    getdata(name);
 
     GOOFIT_INFO("Number of Events in dataset: {}", Data->getNumEvents());
  
     signaldalitz = makesignalpdf(0);
-    bkgdalitz = makeBackgroundPdf();
-
-    bkgdalitz->setParameterConstantness(true);
+    
 
     Variable constant("constant",1);
     std::vector<Variable> weights;
@@ -757,7 +759,9 @@ void runtoyfit(std::string name,bool bkgOn,bool toyOn) {
     comps.clear();
     comps.push_back(signaldalitz);
     if(bkgOn){
-    comps.push_back(bkgdalitz);
+        bkgdalitz = makeBackgroundPdf();
+        bkgdalitz->setParameterConstantness(true);
+        comps.push_back(bkgdalitz);
     }
 
     AddPdf* overallPdf = new AddPdf("overallPdf",weights,comps);
@@ -782,47 +786,13 @@ void runtoyfit(std::string name,bool bkgOn,bool toyOn) {
 
     PrintFF(ff);
 
-    //makeToyDalitzPdfPlots(overallPdf,bkgOn,toyOn);
+    makeToyDalitzPdfPlots(overallPdf);
 
     saveParameters(param2, "Parametros_fit.txt");
 
 
 }
 
-void rundatafit(std::string name){
-
-    s12.setNumBins(1500);
-    s13.setNumBins(1500);
-
-    getdata(name,false);
-
-    GOOFIT_INFO("Number of Events in dataset: {}", Data->getNumEvents());
-
-    signaldalitz = makesignalpdf(0);
-    bkgdalitz = makeBackgroundPdf();
-
-    bkgdalitz->setParameterConstantness(true);
-
-    Variable constant("constant",1);
-    std::vector<Variable> weights;
-    weights.push_back(constant);
-    
-    comps.clear();
-    comps.push_back(signaldalitz);
-    comps.push_back(bkgdalitz);
-
-    AddPdf* overallPdf = new AddPdf("overallPdf",weights,comps);
-    overallPdf->setData(Data);
-    signaldalitz->setDataSize(Data->getNumEvents());
-
-    FitManagerMinuit2 fitter(overallPdf);
-    fitter.setVerbosity(3);
-
-    auto func_min = fitter.fit();
-    makeToyDalitzPdfPlots(overallPdf);
-
-
-}
 
 
 int main(int argc, char **argv){
@@ -830,22 +800,13 @@ int main(int argc, char **argv){
     GooFit::Application app{"D2PPP",argc,argv};
 
     size_t  nevents = 100000;
-    bool bkgOn = false;
-    bool toyOn = true;
 
     auto gen = app.add_subcommand("gen","generate toy data");
     gen->add_option("-e,--events",nevents,"The number of events to generate",true);
-    gen->add_option("-b,--background",bkgOn,"Include background histogram in the model",true);
 
-    auto toyfit = app.add_subcommand("fittoy","fit toy data");
-    toyfit->add_option("-b,--background",bkgOn,"Include background histogram in the model",true);
-    toyfit->add_option("-t,--toy",toyOn,"Include background histogram in the model",true);
-
-
-    auto datafit = app.add_subcommand("fitdata","fit data");
+    auto toyfit = app.add_subcommand("fit","fit toy data/toyMC");
 
     auto plot = app.add_subcommand("plot","plot signal");
-    plot->add_option("-b,--background",bkgOn,"Include background histogram in the model",true);
 
 
     GOOFIT_PARSE(app);
@@ -857,22 +818,18 @@ int main(int argc, char **argv){
 
     if(*gen){
         CLI::AutoTimer timer("MC Generation");
-        runtoygen("D2PPP_toy.txt",nevents,bkgOn);
+        runtoygen("D2PPP_toy.txt",nevents);
     }
 
     if(*toyfit){
         CLI::AutoTimer timer("FIT");
-        runtoyfit("D2PPP_toy.txt",bkgOn,toyOn);
+        runtoyfit("D2PPP_toy.txt");
     }
 
-    if(*datafit){
-        CLI::AutoTimer timer("FIT");
-        rundatafit("D2PPP_toy.txt");
-    }
-
+    
     if(*plot){
         CLI::AutoTimer timer("FIT");
-        runMakeToyDalitzPdfPlots("D2PPP_toy.txt",bkgOn,toyOn);
+        runMakeToyDalitzPdfPlots("D2PPP_toy.txt");
     }
 
 }
