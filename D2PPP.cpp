@@ -130,7 +130,7 @@ Data = new UnbinnedDataSet({s12,s13,eventNumber});
         std::cout << "PDF plotted" << '\n';
     }
 
-        dp.fillDataSetMC(*Data,nEvents,150);
+        dp.fillDataSetMC(*Data,nEvents);
         TH2F th2("toyData", "", 200, s12.getLowerLimit(), s12.getUpperLimit(), 200, s13.getLowerLimit(),
                          s13.getUpperLimit());
     th2.GetXaxis()->SetTitle("#pi^{-}#pi^{+} [Gev/c^{2}]");
