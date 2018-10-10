@@ -212,7 +212,7 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
 
 SmoothHistogramPdf* makeEfficiencyPdf() {
 
-    vector<Observable> lvars;
+       vector<Observable> lvars;
     lvars.push_back(s12);
     lvars.push_back(s13);
     BinnedDataSet *binEffData = new BinnedDataSet(lvars);
@@ -255,12 +255,41 @@ SmoothHistogramPdf* makeEfficiencyPdf() {
 
 SmoothHistogramPdf* makeBackgroundPdf() {
 
-    BinnedDataSet *binBkgData = new BinnedDataSet({s12, s13});
+
+    s12.setNumBins(120);
+    s13.setNumBins(120);
+
+   BinnedDataSet *binBkgData = new BinnedDataSet({s12, s13});
     
     TFile *f = new TFile(data_name.c_str());
+    TTree *s = (TTree*)f->Get(tree_name.c_str());
+    
     TH2F* bkgHistogram = (TH2F*)f->Get("h1");
 
-    TRandom3 donram(0);
+     /*double _s12, _s13;
+
+
+    
+
+    s->SetBranchAddress("s12_pipi_DTF",&_s12);
+    s->SetBranchAddress("s13_pipi_DTF",&_s13);
+   
+
+    for(size_t i = 0; i < 100000 ; i++){
+
+            s->GetEntry(i);
+            s12.setValue(_s12);
+            s13.setValue(_s13);
+            eventNumber.setValue(i);
+            binBkgData->addEvent();
+
+    }
+
+for(int i = 0; i < 100000 ; i++){
+       cout << i << "\t" <<  s12.getValue() << '\t' << s13.getValue() << '\t' << binBkgData->getBinContent(i) << endl;
+    } */
+
+    TRandom3 donram(50);
     for(int i = 0; i < NevG; i++) {
         do {
             s12.setValue(donram.Uniform(s12.getLowerLimit(), s12.getUpperLimit()));
@@ -268,6 +297,7 @@ SmoothHistogramPdf* makeBackgroundPdf() {
         } while(!inDalitz(s12.getValue(), s13.getValue(), D_MASS, d1_MASS, d2_MASS, d3_MASS));
 
         double weight = bkgHistogram->GetBinContent(bkgHistogram->FindBin(s12.getValue(), s13.getValue()));
+
         binBkgData->addWeightedEvent(weight);
 
         if(doEffSwap) {
@@ -276,8 +306,15 @@ SmoothHistogramPdf* makeBackgroundPdf() {
             s13.setValue(swapmass);
             weight = bkgHistogram->GetBinContent(bkgHistogram->FindBin(s12.getValue(), s13.getValue()));
             binBkgData->addWeightedEvent(weight);
+           
         }
     }
+
+    for(int i = 0; i < 10 ; i++){
+       cout << i << "\t" <<  s12.getValue() << '\t' << s13.getValue() << '\t' << binBkgData->getBinContent(i) << endl;
+    }
+
+
     if(saveBkgPlot) {
         TCanvas foo;
         bkgHistogram->Draw("colz");
@@ -286,10 +323,14 @@ SmoothHistogramPdf* makeBackgroundPdf() {
         foo.SetLogz(true);
         foo.SaveAs("plots/background_bins_log.png");
     }
-    Variable *effSmoothing  = new Variable("effSmoothing", 1);
+
+    
+
+    Variable *effSmoothing  = new Variable("effSmoothing", 1.0, 0.01, 0, 1);
     SmoothHistogramPdf *ret = new SmoothHistogramPdf("efficiency", binBkgData, *effSmoothing);
 
-
+    s12.setNumBins(1500);
+    s13.setNumBins(1500);
     return ret;
 }
 
@@ -306,6 +347,18 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     dtoppp.meson_radius = 1.5;
 
     //Mass and width
+    
+    double f0_980_MASS     = 0.965;
+    double f0_980_GPP     = 0.165;
+    double f0_980_GKK     = 4.21*f0_980_GPP;
+    double f0_980_amp     = 2.0;
+    double f0_980_phase    = 0.0;
+
+    double f0_1500_MASS     = 1.504;
+    double f0_1500_WIDTH    = 0.109;
+    double f0_1500_amp      = 1.0;
+    double f0_1500_phase    = 0.0;
+
     double rho_MASS     = 0.77526;
     double rho_WIDTH    = 0.1478;
     double rho_amp      = 1.0;
@@ -326,58 +379,42 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     double sigma_amp   = 1.0;
     double sigma_phase = 0.0;
 
-    double f0_980_MASS     = 0.965;
-    double f0_980_GPP     = 0.165;
-    double f0_980_GKK     = 4.21*f0_980_GPP;
-    double f0_980_amp     = 2.0;
-    double f0_980_phase    = 0.0;
-
-    double f0_1500_MASS     = 1.504;
-    double f0_1500_WIDTH    = 0.109;
-    double f0_1500_amp      = 2.0;
-    double f0_1500_phase    = 0.0;
 
 
     //rho(770)
-    Variable v_rho_Mass("rho_MASS",rho_MASS);
-    Variable v_rho_Width("rho_WIDTH",rho_WIDTH);
+    Variable v_rho_Mass("rho_MASS",rho_MASS,0.001,rho_MASS*0.95,rho_MASS*1.05);
+    Variable v_rho_Width("rho_WIDTH",rho_WIDTH,0.001,rho_WIDTH*0.95,rho_WIDTH*1.05);
     Variable v_rho_amp_real("rho_amp_real",rho_amp*cos(rho_phase), 0.001, -100.0, +100.0);
     Variable v_rho_amp_img("rho_amp_img",rho_amp*sin(rho_phase), 0.001, -100.0, +100.0);
 
-    v_rho_Mass.setFixed(true);
-    v_rho_Width.setFixed(true);
-
     //omega(782)
-    Variable v_omega_Mass("omega_MASS",omega_MASS);
-    Variable v_omega_Width("omega_WIDTH",omega_WIDTH);
+    Variable v_omega_Mass("omega_MASS",omega_MASS,0.001,omega_MASS*0.95,omega_MASS*1.05);
+    Variable v_omega_Width("omega_WIDTH",omega_WIDTH,0.001,omega_WIDTH*0.95,omega_WIDTH*1.05);
     Variable v_omega_amp_real("omega_amp_real",omega_amp*cos(omega_phase), 0.001, -100.0, +100.0);
     Variable v_omega_amp_img("omega_amp_img",omega_amp*sin(omega_phase), 0.001, -100.0, +100.0);
 
-    v_omega_Mass.setFixed(true);
-    v_omega_Width.setFixed(true);
-
     //f2(1270)
-    Variable v_f2_Mass("f2_MASS",f2_MASS);
-    Variable v_f2_Width("f2_WIDTH",f2_WIDTH);
+    Variable v_f2_Mass("f2_MASS",f2_MASS,0.001,f2_MASS*0.95,f2_MASS*1.05);
+    Variable v_f2_Width("f2_WIDTH",f2_WIDTH,0.001,f2_WIDTH*0.95,f2_WIDTH*1.05);
     Variable v_f2_amp_real("f2_amp_real",f2_amp*cos(f2_phase), 0.001, -100.0, +100.0);
     Variable v_f2_amp_img("f2_amp_img",f2_amp*sin(f2_phase), 0.001, -100.0, +100.0);
 
     //sigma(480)
-    Variable v_sigma_Mass("sigma_MASS",sigma_MASS);
-    Variable v_sigma_Width("sigma_WIDTH",sigma_WIDTH);
+    Variable v_sigma_Mass("sigma_MASS",sigma_MASS,0.001,sigma_MASS*0.95,sigma_MASS*1.05);
+    Variable v_sigma_Width("sigma_WIDTH",sigma_WIDTH,0.001,sigma_WIDTH*0.95,sigma_WIDTH*1.05);
     Variable v_sigma_amp_real("sigma_amp_real",sigma_amp*cos(sigma_phase), 0.001, -100.0, +100.0);
     Variable v_sigma_amp_img("sigma_amp_img",sigma_amp*sin(sigma_phase), 0.001, -100.0, +100.0);
 
     //f0(980)
-    Variable v_f0_980_Mass("f0_980_MASS",f0_980_MASS);
-    Variable v_f0_980_GPP("f0_980_GPP",f0_980_GPP);
-    Variable v_f0_980_GKK("f0_980_GKK",f0_980_GKK);
+    Variable v_f0_980_Mass("f0_980_MASS",f0_980_MASS,0.001,f0_980_MASS*0.95,f0_980_MASS*1.05);
+    Variable v_f0_980_GPP("f0_980_GPP",f0_980_GPP,0.001,f0_980_GPP*0.95,f0_980_GPP*1.05);
+    Variable v_f0_980_GKK("f0_980_GKK",f0_980_GKK,0.001,f0_980_GKK*0.95,f0_980_GKK*1.05);
     Variable v_f0_980_amp_real("f0_980_amp_real",f0_980_amp*cos(f0_980_phase), 0.001, -100.0, +100.0);
     Variable v_f0_980_amp_img("f0_980_amp_img",f0_980_amp*sin(f0_980_phase), 0.001, -100.0, +100.0);
 
     //f0(1500)
-    Variable v_f0_1500_Mass("f0_1500_MASS",f0_1500_MASS);
-    Variable v_f0_1500_Width("f0_1500_Width",f0_1500_WIDTH);
+    Variable v_f0_1500_Mass("f0_1500_MASS",f0_1500_MASS,0.001,f0_1500_MASS*0.95,f0_1500_MASS*1.05);
+    Variable v_f0_1500_Width("f0_1500_Width",f0_1500_WIDTH,0.001,f0_1500_WIDTH*0.95,f0_1500_WIDTH*1.05);
     Variable v_f0_1500_amp_real("f0_amp_1500_real",f0_1500_amp*cos(f0_1500_phase), 0.001, -100.0, +100.0);
     Variable v_f0_1500_amp_img("f0_1500_amp_img",f0_1500_amp*sin(f0_1500_phase), 0.001, -100.0, +100.0);
 
@@ -404,14 +441,14 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     //MIPWA
     ResonancePdf *swave_12 = loadPWAResonance(pwa_file, true);
 
-    //dtoppp.resonances.push_back(rho_12);
-    //dtoppp.resonances.push_back(omega_12);
-    //dtoppp.resonances.push_back(f2_12);
-    //dtoppp.resonances.push_back(sigma_12);
-    //dtoppp.resonances.push_back(f0_980_12);
+    dtoppp.resonances.push_back(rho_12);
+    dtoppp.resonances.push_back(omega_12);
+    dtoppp.resonances.push_back(f2_12);
+    dtoppp.resonances.push_back(sigma_12);
+    dtoppp.resonances.push_back(f0_980_12);
     //dtoppp.resonances.push_back(f0_1500_12);
-    //dtoppp.resonances.push_back(nonr);
-    dtoppp.resonances.push_back(swave_12);
+    dtoppp.resonances.push_back(nonr);
+    //dtoppp.resonances.push_back(swave_12);
 
     if(!eff) {
         // By default create a constant efficiency.
@@ -442,10 +479,8 @@ void getdata(std::string name){
 
     Data = new UnbinnedDataSet({s12,s13,eventNumber});
 
-if(toyOn)
-{
+if(toyOn){
     std::ifstream reader(name.c_str());
-
 
     while(reader >> eventNumber >> s12 >> s13){
 
@@ -454,9 +489,8 @@ if(toyOn)
     }
 
     reader.close();
-}
-else
-    {
+
+}else{
 
     TFile *f = TFile::Open(data_name.c_str());
     TTree *t = (TTree *)f->Get("sTree");
@@ -469,20 +503,13 @@ else
 
     for(size_t i = 0; i <100000 ; i++){
 
-       // if(_s12>s12_min && _s12<s12_max  && _s13>s13_min && _s13<s13_max) {
+       
 
             t->GetEntry(i);
             s12.setValue(_s12);
             s13.setValue(_s13);
-
-            //cout << i << "\t" << s12.getValue() << endl;
-
             eventNumber.setValue(i);
             Data->addEvent();
-
-       // }else{
-      //      continue;
-      //  }
 
     }
 
@@ -502,7 +529,7 @@ void runtoygen(std::string name, size_t events){
     signaldalitz = makesignalpdf(0);
     
 
-    Variable constant("constant",1);
+    Variable constant("constant",0);
     std::vector<Variable> weights;
     weights.push_back(constant);
     
@@ -510,7 +537,7 @@ void runtoygen(std::string name, size_t events){
     comps.push_back(signaldalitz);
     if(bkgOn){
         bkgdalitz = makeBackgroundPdf();
-        bkgdalitz->setParameterConstantness(true);
+       // bkgdalitz->setParameterConstantness(true);
  	    comps.push_back(bkgdalitz);
     }
     
