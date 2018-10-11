@@ -63,7 +63,7 @@ bool saveBkgPlot= true;
 bool saveEffPlot= true;
 bool doEffSwap  = true;
 bool toyOn      = false;
-bool bkgOn      = true;
+bool bkgOn      = false;
 
 const double NevG = 1e7; 
 
@@ -212,11 +212,12 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
 
 SmoothHistogramPdf* makeEfficiencyPdf() {
 
-       vector<Observable> lvars;
+    vector<Observable> lvars;
     lvars.push_back(s12);
     lvars.push_back(s13);
     BinnedDataSet *binEffData = new BinnedDataSet(lvars);
     
+    cout << "Reading Efficiency PDF in: " << data_name << endl;
     TFile *f     = TFile::Open(data_name.c_str());
     TH2F *bkgHistogram = (TH2F *)f->Get("h0");
     bkgHistogram->SetStats(false);
@@ -261,6 +262,7 @@ SmoothHistogramPdf* makeBackgroundPdf() {
 
    BinnedDataSet *binBkgData = new BinnedDataSet({s12, s13});
     
+    cout << "Making BG PDF: " << data_name << endl;
     TFile *f = new TFile(data_name.c_str());
     TTree *s = (TTree*)f->Get(tree_name.c_str());
     
@@ -424,7 +426,7 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     Variable nonr_amp_imag("nonr_amp_imag", 0.0, 0.001, -100.0, +100.0);
 
     //setting resonances
-    ResonancePdf* rho_12 = new Resonances::GS("rho",v_rho_amp_real,v_rho_amp_img,v_rho_Mass,v_rho_Width,1,PAIR_12,true);
+    //ResonancePdf* rho_12 = new Resonances::GS("rho",v_rho_amp_real,v_rho_amp_img,v_rho_Mass,v_rho_Width,1,PAIR_12,true);
        
     ResonancePdf* omega_12 = new Resonances::RBW("omega",v_omega_amp_real,v_omega_amp_img,v_omega_Mass,v_omega_Width,1,PAIR_12,true);
     
@@ -441,14 +443,13 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     //MIPWA
     ResonancePdf *swave_12 = loadPWAResonance(pwa_file, true);
 
-    dtoppp.resonances.push_back(rho_12);
-    dtoppp.resonances.push_back(omega_12);
-    dtoppp.resonances.push_back(f2_12);
-    dtoppp.resonances.push_back(sigma_12);
-    dtoppp.resonances.push_back(f0_980_12);
-    dtoppp.resonances.push_back(f0_1500_12);
-    dtoppp.resonances.push_back(nonr);
-    //dtoppp.resonances.push_back(swave_12);
+    //dtoppp.resonances.push_back(rho_12);
+    //dtoppp.resonances.push_back(omega_12);
+    //dtoppp.resonances.push_back(f2_12);
+    //dtoppp.resonances.push_back(sigma_12);
+    //dtoppp.resonances.push_back(f0_12);
+    //dtoppp.resonances.push_back(nonr);
+    dtoppp.resonances.push_back(swave_12);
 
     if(!eff) {
         // By default create a constant efficiency.
@@ -492,6 +493,7 @@ if(toyOn){
 
 }else{
 
+    cout << "Opening: " << data_name << " for reading." << endl;
     TFile *f = TFile::Open(data_name.c_str());
     TTree *t = (TTree *)f->Get("sTree");
 
@@ -795,7 +797,7 @@ void runtoyfit(std::string name) {
 
     AddPdf* overallPdf = new AddPdf("overallPdf",weights,comps);
     overallPdf->setData(Data);
-    overallPdf->addSpecialMask(PdfBase::ForceSeparateNorm);
+    // overallPdf->addSpecialMask(PdfBase::ForceSeparateNorm);
     signaldalitz->setDataSize(Data->getNumEvents());
 
     FitManagerMinuit2 fitter(overallPdf);
@@ -828,6 +830,8 @@ void runtoyfit(std::string name) {
 int main(int argc, char **argv){
 
     GooFit::Application app{"D2PPP",argc,argv};
+
+    app.add_flag("--bkgOn", bkgOn, "Turn on background (requires file)");
 
     size_t  nevents = 100000;
 
