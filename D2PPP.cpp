@@ -62,8 +62,8 @@ double d3_MASS  = pi_MASS;
 bool saveBkgPlot= true;
 bool saveEffPlot= true;
 bool doEffSwap  = true;
-bool toyOn      = false;
-bool bkgOn      = true;
+bool toyOn      = true;
+bool bkgOn      = false;
 
 const double NevG = 1e7; 
 
@@ -72,8 +72,8 @@ fptype s12_max = POW2(D_MASS   - d2_MASS);
 fptype s13_min = POW2(d1_MASS  + d3_MASS);
 fptype s13_max = POW2(D_MASS   - d2_MASS);
 
-Observable s12("s12",s12_min,2.85); //s12^{2}
-Observable s13("s13",s13_min,2.85);
+Observable s12("s12",s12_min,s12_max); //s12^{2}
+Observable s13("s13",s13_min,s12_max);
 EventNumber eventNumber("eventNumber");
 
 DalitzPlotPdf* signaldalitz = nullptr;
@@ -447,8 +447,8 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     dtoppp.resonances.push_back(f2_12);
     dtoppp.resonances.push_back(sigma_12);
     dtoppp.resonances.push_back(f0_980_12);
-    dtoppp.resonances.push_back(f0_1500_12);
-    dtoppp.resonances.push_back(nonr);
+    //dtoppp.resonances.push_back(f0_1500_12);
+    //dtoppp.resonances.push_back(nonr);
     //dtoppp.resonances.push_back(swave_12);
 
     if(!eff) {
