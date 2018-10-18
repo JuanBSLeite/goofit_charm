@@ -1,2 +1,3 @@
 # goofit_charm
-Study of D2PPP channel
+
+MIPWA STUDIES USING D_(s)^{+} \rightarrow #pi^{-}#pi^{+}#pi^{+} phase space.
