@@ -16,6 +16,7 @@
 #include <TComplex.h>
 #include <TFile.h>
 #include <TTree.h>
+#include <TGraphErrors.h>
 
 
 // System stuff
@@ -879,13 +880,17 @@ void genfitplot(int nsamples,int nres){
     double var2[nres][nsamples];
     double e1[nres][nsamples];
     double e2[nres][nsamples];
-
+    double vid[nsamples];
+    double vid_e[nsamples];
     int j = 0;
 
     for(int i = 0; i != nsamples+1; i++){
         
         string name = fmt::format("Fit/Fit_parameter_{0}.txt",i);
         ifstream r(name.c_str());
+
+        vid[i]=i;
+        vid_e[i]=0;
 
         if(r.is_open()){
 
@@ -912,23 +917,33 @@ void genfitplot(int nsamples,int nres){
         }
 
     }
-
-    TH1F rho("rho","rho",100,-5,5);
-    TH1F f0("f0","f0",100,-5,5);
-
+   
+    TGraphErrors rho_img (nsamples,var1[0],vid,e1[0],vid_e);
+    TGraphErrors f0_img  (nsamples,var1[1],vid,e1[1],vid_e);
+    TGraphErrors rho_real(nsamples,var2[0],vid,e2[0],vid_e);
+    TGraphErrors f0_real (nsamples,var2[1],vid,e2[1],vid_e);
+ 
+/* 
     for(int i = 0; i < nsamples ; i++){
 
-        rho.Fill(var1[0][i],e1[0][i]);
-        f0.Fill(var1[1][i],e1[1][i]);
+        rho_img.Fill(var1[0][i],e1[0][i]);
+        f0_img.Fill(var1[1][i],e1[1][i]);
+        rho_real.Fill(var2[0][i],e2[0][i]);
+        f0_real.Fill(var2[1][i],e2[1][i]);
        
 
     }
-
+  */
     TCanvas foo;
-    rho.Draw();
+    rho_img.Draw("AP*");
+    foo.SaveAs("plots/rho_img.png");
+    f0_img.Draw("AP*");
+    foo.SaveAs("plots/f0_img.png"); 
+    
+    rho_real.Draw("AP*");
     foo.SaveAs("plots/rho_real.png");
-    f0.Draw();
-    foo.SaveAs("plots/f0_real.png");
+    f0_real.Draw("AP*");
+    foo.SaveAs("plots/f0_real.png"); 
     
 
     
