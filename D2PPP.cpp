@@ -22,6 +22,7 @@
 #include <CLI/Timer.hpp>
 #include <fstream>
 #include <string>
+#include <fmt/format.h>
 
 // GooFit stuff
 #include <goofit/Application.h>
@@ -72,8 +73,8 @@ fptype s12_max = POW2(D_MASS   - d2_MASS);
 fptype s13_min = POW2(d1_MASS  + d3_MASS);
 fptype s13_max = POW2(D_MASS   - d2_MASS);
 
-Observable s12("s12",s12_min,s12_max); //s12^{2}
-Observable s13("s13",s13_min,s12_max);
+Observable s12("s12",s12_min,2.85); //s12^{2}
+Observable s13("s13",s13_min,2.85);
 EventNumber eventNumber("eventNumber");
 
 DalitzPlotPdf* signaldalitz = nullptr;
@@ -106,12 +107,6 @@ void getdata(std::string name);
 TH2F *weightHistogram    = nullptr;
 TH2F *bkgHistogram       = nullptr;
 TH2F *underlyingBins     = nullptr;
-
-
-
-
-
-
 
 
 void maketoydalitzdata(GooPdf* overallsignal,std::string name, size_t nEvents){
@@ -355,38 +350,50 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     double f0_980_amp     = 4.0;
     double f0_980_phase    = 0.0;
 
-    double f0_1500_MASS     = 1.504;
-    double f0_1500_WIDTH    = 0.109;
-    double f0_1500_amp      = 1.0;
-    double f0_1500_phase    = 0.0;
+    double f0_1370_MASS     = 1.400;
+    double f0_1370_WIDTH    = 0.3;
+    double f0_1370_amp      = 1.0;
+    double f0_1370_phase    = 0;
 
     double rho_MASS     = 0.77526;
     double rho_WIDTH    = 0.1478;
-    double rho_amp      = 1.0;
-    double rho_phase    = 0.0;
+    double rho_amp      = 0.7;
+    double rho_phase    = 0;
+
+    double rho_1450_MASS     = 1.32635;
+    double rho_1450_WIDTH    = 0.32413;
+    double rho_1450_amp      = 0.5;
+    double rho_1450_phase    = 0;
 
     double omega_MASS   = 0.78265;
     double omega_WIDTH  = 0.00849;
-    double omega_amp    = 1.0;
+    double omega_amp    = 0.5;
     double omega_phase  = 0.0;
 
     double f2_MASS     = 1.2755;
     double f2_WIDTH    = 0.1867;
-    double f2_amp      = 1.0;
-    double f2_phase    = 0.0;
+    double f2_amp      = 0.5;
+    double f2_phase    = 0;
 
     double sigma_MASS  = 0.480;
     double sigma_WIDTH = 0.350;
-    double sigma_amp   = 1.0;
+    double sigma_amp   = 0.5;
     double sigma_phase = 0.0;
 
 
 
     //rho(770)
-    Variable v_rho_Mass("rho_MASS",rho_MASS);
-    Variable v_rho_Width("rho_WIDTH",rho_WIDTH);
+    Variable v_rho_Mass("rho_MASS",rho_MASS,0.01,rho_MASS*0.95,rho_MASS*1.05);
+    Variable v_rho_Width("rho_WIDTH",rho_WIDTH,0.01,rho_WIDTH*0.95,rho_WIDTH*1.05);
     Variable v_rho_amp_real("rho_amp_real",rho_amp*cos(rho_phase), 0.001, -100.0, +100.0);
     Variable v_rho_amp_img("rho_amp_img",rho_amp*sin(rho_phase), 0.001, -100.0, +100.0);
+
+    //rho(1450)
+    Variable v_rho_1450_Mass("rho_1450_MASS",rho_1450_MASS,0.01,rho_1450_MASS*0.95,rho_1450_MASS*1.05);
+    Variable v_rho_1450_Width("rho_1450_WIDTH",rho_1450_WIDTH,0.01,rho_1450_WIDTH*0.95,rho_1450_WIDTH*1.05);
+    Variable v_rho_1450_amp_real("rho_1450_amp_real",rho_1450_amp*cos(rho_1450_phase), 0.001, -100.0, +100.0);
+    Variable v_rho_1450_amp_img("rho_1450_amp_img",rho_1450_amp*sin(rho_1450_phase), 0.001, -100.0, +100.0);
+
 
     //omega(782)
     Variable v_omega_Mass("omega_MASS",omega_MASS);
@@ -395,45 +402,74 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     Variable v_omega_amp_img("omega_amp_img",omega_amp*sin(omega_phase), 0.001, -100.0, +100.0);
 
     //f2(1270)
-    Variable v_f2_Mass("f2_MASS",f2_MASS);
-    Variable v_f2_Width("f2_WIDTH",f2_WIDTH);
+    Variable v_f2_Mass("f2_MASS",f2_MASS,0.01,f2_MASS*0.95,f2_MASS*1.05);
+    Variable v_f2_Width("f2_WIDTH",f2_WIDTH,0.01,f2_WIDTH*0.95,f2_WIDTH*1.05);
     Variable v_f2_amp_real("f2_amp_real",f2_amp*cos(f2_phase), 0.001, -100.0, +100.0);
     Variable v_f2_amp_img("f2_amp_img",f2_amp*sin(f2_phase), 0.001, -100.0, +100.0);
 
     //sigma(480)
-    Variable v_sigma_Mass("sigma_MASS",sigma_MASS);
-    Variable v_sigma_Width("sigma_WIDTH",sigma_WIDTH);
+    Variable v_sigma_Mass("sigma_MASS",sigma_MASS,0.01,sigma_MASS*0.95,sigma_MASS*1.05);
+    Variable v_sigma_Width("sigma_WIDTH",sigma_WIDTH,0.01,sigma_WIDTH*0.95,sigma_WIDTH*1.05);
     Variable v_sigma_amp_real("sigma_amp_real",sigma_amp*cos(sigma_phase), 0.001, -100.0, +100.0);
     Variable v_sigma_amp_img("sigma_amp_img",sigma_amp*sin(sigma_phase), 0.001, -100.0, +100.0);
 
     //f0(980)
-    Variable v_f0_980_Mass("f0_980_MASS",f0_980_MASS);
-    Variable v_f0_980_GPP("f0_980_GPP",f0_980_GPP);
-    Variable v_f0_980_GKK("f0_980_GKK",f0_980_GKK);
+    Variable v_f0_980_Mass("f0_980_MASS",f0_980_MASS,0.01,f0_980_MASS*0.95,f0_980_MASS*1.05);
+    Variable v_f0_980_GPP("f0_980_GPP",f0_980_GPP,0.01,f0_980_GPP*0.95,f0_980_GPP*1.05);
+    Variable v_f0_980_GKK("f0_980_GKK",f0_980_GKK,0.01,f0_980_GKK*0.95,f0_980_GKK*1.05);
     Variable v_f0_980_amp_real("f0_980_amp_real",f0_980_amp*cos(f0_980_phase), 0.001, -100.0, +100.0);
     Variable v_f0_980_amp_img("f0_980_amp_img",f0_980_amp*sin(f0_980_phase), 0.001, -100.0, +100.0);
 
-    //f0(1500)
-    Variable v_f0_1500_Mass("f0_1500_MASS",f0_1500_MASS);
-    Variable v_f0_1500_Width("f0_1500_Width",f0_1500_WIDTH);
-    Variable v_f0_1500_amp_real("f0_amp_1500_real",f0_1500_amp*cos(f0_1500_phase), 0.001, -100.0, +100.0);
-    Variable v_f0_1500_amp_img("f0_1500_amp_img",f0_1500_amp*sin(f0_1500_phase), 0.001, -100.0, +100.0);
+    
+    //f0(1370)
+    Variable v_f0_1370_Mass("f0_1370_MASS",f0_1370_MASS,0.01,f0_1370_MASS*0.95,f0_1370_MASS*1.05);
+    Variable v_f0_1370_Width("f0_1370_Width",f0_1370_WIDTH,0.01,f0_1370_WIDTH*0.95,f0_1370_WIDTH*1.05);
+    Variable v_f0_1370_amp_real("f0_amp_1500_real",f0_1370_amp*cos(f0_1370_phase), 0.001, -100.0, +100.0);
+    Variable v_f0_1370_amp_img("f0_1370_amp_img",f0_1370_amp*sin(f0_1370_phase), 0.001, -100.0, +100.0);
 
 
     //NR
     Variable nonr_amp_real("nonr_amp_real", 1.0, 0.001, -100.0, +100.0);
     Variable nonr_amp_imag("nonr_amp_imag", 0.0, 0.001, -100.0, +100.0);
 
+    //Masses and Widths fixed
+
+    v_rho_Mass.setFixed(true);
+    v_rho_Width.setFixed(true);
+
+    v_rho_1450_Mass.setFixed(true);
+    v_rho_1450_Width.setFixed(true);
+
+    v_omega_Mass.setFixed(true);
+    v_omega_Width.setFixed(true);
+
+    v_f2_Mass.setFixed(true);
+    v_f2_Width.setFixed(true);
+
+    v_sigma_Mass.setFixed(true);
+    v_sigma_Width.setFixed(true);
+
+    v_f0_980_Mass.setFixed(true);
+    v_f0_980_GKK.setFixed(true);
+    v_f0_980_GPP.setFixed(true);
+
+
+    v_f0_1370_Mass.setFixed(true);
+    v_f0_1370_Width.setFixed(true);
+
+
     //setting resonances
-    ResonancePdf* rho_12 = new Resonances::GS("rho",v_rho_amp_real,v_rho_amp_img,v_rho_Mass,v_rho_Width,1,PAIR_12,true);
+    ResonancePdf* rho_12 = new Resonances::GS("rho",v_rho_amp_real,v_rho_amp_img,v_rho_Mass,v_rho_Width,(unsigned int)1,PAIR_12,true);
        
+    ResonancePdf* rho_1450_12 = new Resonances::GS("rho_1450",v_rho_1450_amp_real,v_rho_1450_amp_img,v_rho_1450_Mass,v_rho_1450_Width,(unsigned int)1,PAIR_12,true);
+    
     ResonancePdf* omega_12 = new Resonances::RBW("omega",v_omega_amp_real,v_omega_amp_img,v_omega_Mass,v_omega_Width,1,PAIR_12,true);
     
     ResonancePdf* f2_12 = new Resonances::RBW("f2",v_f2_amp_real,v_f2_amp_img,v_f2_Mass,v_f2_Width,2,PAIR_12,true);
        
     ResonancePdf* sigma_12 = new Resonances::RBW("sigma",v_sigma_amp_real,v_sigma_amp_img,v_sigma_Mass,v_sigma_Width,(unsigned int)0,PAIR_12,true);
    
-    ResonancePdf* f0_1500_12 = new Resonances::RBW("f0_1500_12",v_f0_1500_amp_real,v_f0_1500_amp_img,v_f0_1500_Mass,v_f0_1500_Width,(unsigned int)0,PAIR_12,true);
+    ResonancePdf* f0_1370_12 = new Resonances::RBW("f0_1370_12",v_f0_1370_amp_real,v_f0_1370_amp_img,v_f0_1370_Mass,v_f0_1370_Width,(unsigned int)0,PAIR_12,true);
       
     ResonancePdf* f0_980_12 = new Resonances::FLATTE("f0_980",v_f0_980_amp_real,v_f0_980_amp_img,v_f0_980_Mass,v_f0_980_GPP,v_f0_980_GKK,PAIR_12,true);
       
@@ -442,12 +478,15 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     //MIPWA
     ResonancePdf *swave_12 = loadPWAResonance(pwa_file, true);
 
+    //Pushing Resonances 
+
     dtoppp.resonances.push_back(rho_12);
-    dtoppp.resonances.push_back(omega_12);
-    dtoppp.resonances.push_back(f2_12);
-    dtoppp.resonances.push_back(sigma_12);
+    //dtoppp.resonances.push_back(rho_1450_12);
+    //dtoppp.resonances.push_back(omega_12);
+    //dtoppp.resonances.push_back(f2_12);
+    //dtoppp.resonances.push_back(sigma_12);
     dtoppp.resonances.push_back(f0_980_12);
-    //dtoppp.resonances.push_back(f0_1500_12);
+    //dtoppp.resonances.push_back(f0_1370_12);
     //dtoppp.resonances.push_back(nonr);
     //dtoppp.resonances.push_back(swave_12);
 
@@ -502,7 +541,7 @@ if(toyOn){
     t->SetBranchAddress("s13_pipi_DTF",&_s13);
    
 
-    for(size_t i = 0; i < 500000 ; i++){
+    for(size_t i = 0; i < 100000 ; i++){
 
          t->GetEntry(i);
 
@@ -745,7 +784,7 @@ void saveParameters(const std::vector<ROOT::Minuit2::MinuitParameter> &param, st
     std::vector<fptype> v3;
     std::vector<fptype> v4;
 
-    std::ofstream output_file(file.c_str(),std::ofstream::out | std::ofstream::app);
+    std::ofstream output_file(file.c_str(),ios::out|ios::app);
 
     for(size_t i = 0 ; i < param.size() ; i++){
 
@@ -773,7 +812,7 @@ void saveParameters(const std::vector<ROOT::Minuit2::MinuitParameter> &param, st
 
 
 
-void runtoyfit(std::string name) {
+void runtoyfit(std::string name, int sample_number) {
 
     s12.setNumBins(1500);
     s13.setNumBins(1500);
@@ -806,31 +845,93 @@ void runtoyfit(std::string name) {
 
     AddPdf* overallPdf = new AddPdf("overallPdf",weights,comps);
     overallPdf->setData(Data);
-    
     signaldalitz->setDataSize(Data->getNumEvents());
 
     FitManagerMinuit2 fitter(overallPdf);
     fitter.setVerbosity(3);
 
+    std::string command = "mkdir -p Fit";
+    if(system(command.c_str()) != 0)
+        throw GooFit::GeneralError("Making `Fit` directory failed");
 
     auto param = fitter.getParams()->Parameters();
-
-    saveParameters(param, "Parametros_iniciais.txt");
-
+    saveParameters(param, "Fit/Parametros_iniciais.txt");
 
     auto func_min = fitter.fit();
 
-
-    auto ff = signaldalitz->fit_fractions();
-
+    string id = fmt::format("Fit/Fit_parameter_{0}.txt",sample_number);
     auto param2 = fitter.getParams()->Parameters();
+    saveParameters(param2, id);
 
-    PrintFF(ff);
+//    auto ff = signaldalitz->fit_fractions();
+//    PrintFF(ff);
 
-    makeToyDalitzPdfPlots(overallPdf);
+//    makeToyDalitzPdfPlots(overallPdf);
 
-    saveParameters(param2, "Parametros_fit.txt");
 
+}
+
+void genfitplot(int nsamples,int nres){
+
+    int id;
+    double x,y,z,t;
+    double var1[nres][nsamples];
+    double var2[nres][nsamples];
+    double e1[nres][nsamples];
+    double e2[nres][nsamples];
+
+    int j = 0;
+
+    for(int i = 0; i != nsamples+1; i++){
+        
+        string name = fmt::format("Fit/Fit_parameter_{0}.txt",i);
+        ifstream r(name.c_str());
+
+        if(r.is_open()){
+
+            cout << name << " was open!" <<endl;
+            
+            
+            while(r >> id >> x >> y >> z >> t){
+
+                var1[id][i] = x;
+                e1[id][i] = z;
+                var2[id][i] = y;
+                e2[id][i] = t;
+        
+            }
+
+           
+
+            r.close();
+            cout << name << " was closed!" <<endl;
+        }
+        else{
+            cout << "Error" << endl;
+         break;
+        }
+
+    }
+
+    TH1F rho("rho","rho",100,-5,5);
+    TH1F f0("f0","f0",100,-5,5);
+
+    for(int i = 0; i < nsamples ; i++){
+
+        rho.Fill(var1[0][i],e1[0][i]);
+        f0.Fill(var1[1][i],e1[1][i]);
+       
+
+    }
+
+    TCanvas foo;
+    rho.Draw();
+    foo.SaveAs("plots/rho_real.png");
+    f0.Draw();
+    foo.SaveAs("plots/f0_real.png");
+    
+
+    
 
 }
 
@@ -838,39 +939,62 @@ void runtoyfit(std::string name) {
 
 int main(int argc, char **argv){
 
-    GooFit::Application app{"D2PPP",argc,argv};
+    int sample_number = 0 ;
 
+    GooFit::Application app{"D2PPP",argc,argv};
+    app.add_option("-i,--int", sample_number, "sample number", true);
+
+    
     size_t  nevents = 100000;
 
     auto gen = app.add_subcommand("gen","generate toy data");
-    gen->add_option("-e,--events",nevents,"The number of events to generate",true);
+    gen->add_option("-e,--events",nevents,"The number of events to generate");
 
     auto toyfit = app.add_subcommand("fit","fit toy data/toyMC");
 
     auto plot = app.add_subcommand("plot","plot signal");
 
+    int ns = 10;
+    auto gfplot = app.add_subcommand("gfplot","genfit plot");
+    gfplot->add_option("-n,--ns",ns,"n samples");
 
+    app.require_subcommand();
     GOOFIT_PARSE(app);
+
+    std::string name = fmt::format("MC/MC_Toy_{0}",sample_number);
 
     /// Make the plot directory if it does not exist
     std::string command = "mkdir -p plots";
     if(system(command.c_str()) != 0)
         throw GooFit::GeneralError("Making `plots` directory failed");
 
+    
+    std::string command2 = "mkdir -p MC";
+    if(system(command2.c_str()) != 0)
+        throw GooFit::GeneralError("Making `MC` directory failed");
+
+
     if(*gen){
         CLI::AutoTimer timer("MC Generation");
-        runtoygen("D2PPP_toy.txt",nevents);
+        cout << name << endl;
+
+        runtoygen(name,nevents);
     }
 
     if(*toyfit){
         CLI::AutoTimer timer("FIT");
-        runtoyfit("D2PPP_toy.txt");
+        runtoyfit(name,sample_number);
     }
 
     
     if(*plot){
         CLI::AutoTimer timer("FIT");
         runMakeToyDalitzPdfPlots("D2PPP_toy.txt");
+    }
+
+     if(*gfplot){
+        CLI::AutoTimer timer("FIT");
+        genfitplot(ns,2);
     }
 
 }
