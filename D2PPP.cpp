@@ -30,6 +30,7 @@
 #include <goofit/BinnedDataSet.h>
 #include <goofit/FitManager.h>
 #include <goofit/fitting/FitManagerMinuit2.h>
+#include <goofit/fitting/Params.h>
 #include <goofit/PDFs/GooPdf.h>
 #include <goofit/PDFs/basic/PolynomialPdf.h>
 #include <goofit/PDFs/basic/SmoothHistogramPdf.h>
@@ -778,37 +779,16 @@ void runMakeToyDalitzPdfPlots(std::string name){
 
 }
 
-void saveParameters(const std::vector<ROOT::Minuit2::MinuitParameter> &param, std::string file){
+void saveParameters(const std::vector<double> &param, std::string file){
 
-    std::vector<fptype> v1;
-    std::vector<fptype> v2;
-    std::vector<fptype> v3;
-    std::vector<fptype> v4;
+    ofstream wr(file.c_str());
 
-    std::ofstream output_file(file.c_str(),ios::out|ios::app);
-
-    for(size_t i = 0 ; i < param.size() ; i++){
-
-        if(param[i].IsConst() || param[i].IsFixed()){
-
-            continue;
-
-        }else if(i%2==0){
-
-            v1.push_back(param[i].Value());
-            v2.push_back(param[i].Error());
-        }else{
-            v3.push_back(param[i].Value());
-            v4.push_back(param[i].Error());
-        }
-
+    for(int i = 0; i < param.size(); i++){
+        wr << i <<'\t'<< param[i] << endl;
     }
+    
+    wr.close();
 
-    for(size_t i = 0; i < v1.size(); i++) {
-        output_file << i << "\t" << std::fixed << std::setprecision(6) << v1[i] << "\t" << v3[i] << "\t" << v2[i] << "\t" << v4[i] << std::endl;
-    }
-
-    output_file.close();
 }
 
 
@@ -855,99 +835,92 @@ void runtoyfit(std::string name, int sample_number) {
     if(system(command.c_str()) != 0)
         throw GooFit::GeneralError("Making `Fit` directory failed");
 
-    auto param = fitter.getParams()->Parameters();
-    saveParameters(param, "Fit/Parametros_iniciais.txt");
 
+    const std::vector<double> params_iniciais  = fitter.getParams()->make_minuit_vector();
+
+    string input_name = fmt::format("Fit/fit_parameters_inicial.txt");
+    
+    saveParameters(params_iniciais, input_name);
+
+    
     auto func_min = fitter.fit();
 
-    string id = fmt::format("Fit/Fit_parameter_{0}.txt",sample_number);
-    auto param2 = fitter.getParams()->Parameters();
-    saveParameters(param2, id);
+    const std::vector<double> params  = fitter.getParams()->make_minuit_vector();
 
-//    auto ff = signaldalitz->fit_fractions();
-//    PrintFF(ff);
+    string output_name = fmt::format("Fit/fit_parameters_{0}.txt",sample_number);
+    
+    saveParameters(params, output_name);
 
-//    makeToyDalitzPdfPlots(overallPdf);
+    /*const std::vector<std::vector<double>> params2  = fitter.getParams()->get_recorded();
+    for(int i = 0; i < params.size(); i++){
+        for(int k = 0; k < params[0].size(); k++){
+            printf("[%d][%d] = %lg \n",i,k,params2[i][k]);
+        }
+    }*/
 
+    }
 
-}
+void genfitplot(int nsamples,int nvar){
 
-void genfitplot(int nsamples,int nres){
+    double vec_inicial[nvar];
+    
+    //creating histograms
+    printf("creating histograms");
+    TH1D* hist[nvar];
+    string var_name;
+    for(int i=0; i < nvar; i++){
+        var_name = fmt::format("variable_{0}",i);
+        hist[i] = new TH1D(var_name.c_str(),var_name.c_str(),20,-1,1);
+    }
 
-    int id;
-    double x,y,z,t;
-    double var1[nres][nsamples];
-    double var2[nres][nsamples];
-    double e1[nres][nsamples];
-    double e2[nres][nsamples];
-    double vid[nsamples];
-    double vid_e[nsamples];
-    int j = 0;
+    //getting inicial parameters
+    int index = 0;
+    double inicial_var = 0;
+    ifstream r_inicial("Fit/fit_parameters_inicial.txt");
+    while(r_inicial >> index >> inicial_var){
 
-    for(int i = 0; i != nsamples+1; i++){
+        vec_inicial[index] = inicial_var;
+        printf("%d --> %lg \n",index,inicial_var);
+
+    }
+
+    //getting fit parameters
+    double test;
+    string name;
+
+       for(int i = 0; i < nsamples; i++){
         
-        string name = fmt::format("Fit/Fit_parameter_{0}.txt",i);
-        ifstream r(name.c_str());
+            name = fmt::format("Fit/fit_parameters_{0}.txt",i);
+            ifstream r_fit(name.c_str());
 
-        vid[i]=i;
-        vid_e[i]=0;
+            if(r_fit.is_open()){
 
-        if(r.is_open()){
+                printf("file %d is open!",i);
 
-            cout << name << " was open!" <<endl;
+                int index_fit = 0;
+                double fit_var = 0;
+
+                while(r_fit >> index_fit >> fit_var){
+
+                    test = vec_inicial[index_fit] - fit_var;
+                    printf("[%d] = %lg",index_fit,test);
+                    hist[index_fit]->Fill(test);
+
+                }
             
-            
-            while(r >> id >> x >> y >> z >> t){
 
-                var1[id][i] = x;
-                e1[id][i] = z;
-                var2[id][i] = y;
-                e2[id][i] = t;
-        
+                r_fit.close();
+            }else{
+                printf("Error \n");
             }
+       }
 
-           
+    TFile f("Fit/results.root","RECREATE");
 
-            r.close();
-            cout << name << " was closed!" <<endl;
-        }
-        else{
-            cout << "Error" << endl;
-         break;
-        }
-
-    }
-   
-    TGraphErrors rho_img (nsamples,var1[0],vid,e1[0],vid_e);
-    TGraphErrors f0_img  (nsamples,var1[1],vid,e1[1],vid_e);
-    TGraphErrors rho_real(nsamples,var2[0],vid,e2[0],vid_e);
-    TGraphErrors f0_real (nsamples,var2[1],vid,e2[1],vid_e);
- 
-/* 
-    for(int i = 0; i < nsamples ; i++){
-
-        rho_img.Fill(var1[0][i],e1[0][i]);
-        f0_img.Fill(var1[1][i],e1[1][i]);
-        rho_real.Fill(var2[0][i],e2[0][i]);
-        f0_real.Fill(var2[1][i],e2[1][i]);
-       
-
-    }
-  */
-    TCanvas foo;
-    rho_img.Draw("AP*");
-    foo.SaveAs("plots/rho_img.png");
-    f0_img.Draw("AP*");
-    foo.SaveAs("plots/f0_img.png"); 
-    
-    rho_real.Draw("AP*");
-    foo.SaveAs("plots/rho_real.png");
-    f0_real.Draw("AP*");
-    foo.SaveAs("plots/f0_real.png"); 
-    
-
-    
-
+       for(int i = 0; i < nvar ; i++){
+            hist[i]->Write();       
+       } 
+    f.Close();
 }
 
 
@@ -1009,7 +982,7 @@ int main(int argc, char **argv){
 
      if(*gfplot){
         CLI::AutoTimer timer("FIT");
-        genfitplot(ns,2);
+        genfitplot(ns,12);
     }
 
 }
