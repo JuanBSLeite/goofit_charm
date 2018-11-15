@@ -485,10 +485,10 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     dtoppp.resonances.push_back(rho_12);
     //dtoppp.resonances.push_back(rho_1450_12);
     //dtoppp.resonances.push_back(omega_12);
-    //dtoppp.resonances.push_back(f2_12);
+    dtoppp.resonances.push_back(f2_12);
     //dtoppp.resonances.push_back(sigma_12);
     dtoppp.resonances.push_back(f0_980_12);
-    //dtoppp.resonances.push_back(f0_1370_12);
+    dtoppp.resonances.push_back(f0_1370_12);
     //dtoppp.resonances.push_back(nonr);
     //dtoppp.resonances.push_back(swave_12);
 
@@ -829,7 +829,7 @@ void runtoyfit(std::string name, int sample_number) {
     signaldalitz->setDataSize(Data->getNumEvents());
 
     FitManagerMinuit2 fitter(overallPdf);
-    fitter.setVerbosity(3);
+    fitter.setVerbosity(-1);
 
     std::string command = "mkdir -p Fit";
     if(system(command.c_str()) != 0)
@@ -865,15 +865,16 @@ void genfitplot(int nsamples,int nvar){
     double vec_inicial[nvar];
     
     //creating histograms
-    printf("creating histograms");
     TH1D* hist[nvar];
     string var_name;
     for(int i=0; i < nvar; i++){
         var_name = fmt::format("variable_{0}",i);
-        hist[i] = new TH1D(var_name.c_str(),var_name.c_str(),20,-1,1);
+        hist[i] = new TH1D(var_name.c_str(),var_name.c_str(),200,-.4,.4);
     }
 
     //getting inicial parameters
+
+    printf("Initial Parameters");
     int index = 0;
     double inicial_var = 0;
     ifstream r_inicial("Fit/fit_parameters_inicial.txt");
@@ -895,15 +896,12 @@ void genfitplot(int nsamples,int nvar){
 
             if(r_fit.is_open()){
 
-                printf("file %d is open!",i);
-
                 int index_fit = 0;
                 double fit_var = 0;
 
                 while(r_fit >> index_fit >> fit_var){
 
                     test = vec_inicial[index_fit] - fit_var;
-                    printf("[%d] = %lg",index_fit,test);
                     hist[index_fit]->Fill(test);
 
                 }
@@ -918,6 +916,7 @@ void genfitplot(int nsamples,int nvar){
     TFile f("Fit/results.root","RECREATE");
 
        for(int i = 0; i < nvar ; i++){
+	    printf("Mean_var[%d] = %lg \n",i,hist[i]->GetMean());
             hist[i]->Write();       
        } 
     f.Close();
@@ -943,9 +942,10 @@ int main(int argc, char **argv){
     auto plot = app.add_subcommand("plot","plot signal");
 
     int ns = 10;
+    int nv = 10;
     auto gfplot = app.add_subcommand("gfplot","genfit plot");
     gfplot->add_option("-n,--ns",ns,"n samples");
-
+    gfplot->add_option("-v,--nv",nv,"n variables");
     app.require_subcommand();
     GOOFIT_PARSE(app);
 
@@ -979,10 +979,10 @@ int main(int argc, char **argv){
         CLI::AutoTimer timer("FIT");
         runMakeToyDalitzPdfPlots("D2PPP_toy.txt");
     }
-
+	
      if(*gfplot){
         CLI::AutoTimer timer("FIT");
-        genfitplot(ns,12);
+        genfitplot(ns,nv);
     }
 
 }
