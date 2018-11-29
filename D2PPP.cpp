@@ -351,7 +351,7 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     
     double f0_980_MASS     = 0.965;
     double f0_980_GPP     = 0.165;
-    double f0_980_GKK     = 4.21*f0_980_GPP;
+    double f0_980_GKK     = 4.21;
     double f0_980_amp     = 4.0;
     double f0_980_phase    = 0.0;
 
@@ -775,8 +775,8 @@ void saveParameters(const std::vector<ROOT::Minuit2::MinuitParameter> &param, st
 
 void runtoyfit(std::string name) {
 
-    s12.setNumBins(2000);
-    s13.setNumBins(2000);
+    s12.setNumBins(1000);
+    s13.setNumBins(1000);
 
     getdata(name);
 
