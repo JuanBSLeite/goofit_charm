@@ -443,13 +443,13 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     ResonancePdf *swave_12 = loadPWAResonance(pwa_file, true);
 
     dtoppp.resonances.push_back(rho_12);
-    dtoppp.resonances.push_back(omega_12);
+    //dtoppp.resonances.push_back(omega_12);
     dtoppp.resonances.push_back(f2_12);
-    dtoppp.resonances.push_back(sigma_12);
-    dtoppp.resonances.push_back(f0_980_12);
+    //dtoppp.resonances.push_back(sigma_12);
+    //dtoppp.resonances.push_back(f0_980_12);
     //dtoppp.resonances.push_back(f0_1500_12);
     //dtoppp.resonances.push_back(nonr);
-    //dtoppp.resonances.push_back(swave_12);
+    dtoppp.resonances.push_back(swave_12);
 
     if(!eff) {
         // By default create a constant efficiency.
@@ -525,8 +525,8 @@ if(toyOn){
 
 void runtoygen(std::string name, size_t events){
 
-    s12.setNumBins(1500);
-    s13.setNumBins(1500);
+    s12.setNumBins(2000);
+    s13.setNumBins(2000);
 
     signaldalitz = makesignalpdf(0);
     
@@ -775,8 +775,8 @@ void saveParameters(const std::vector<ROOT::Minuit2::MinuitParameter> &param, st
 
 void runtoyfit(std::string name) {
 
-    s12.setNumBins(1500);
-    s13.setNumBins(1500);
+    s12.setNumBins(2000);
+    s13.setNumBins(2000);
 
     getdata(name);
 
@@ -820,17 +820,18 @@ void runtoyfit(std::string name) {
 
     auto func_min = fitter.fit();
 
-
-    auto ff = signaldalitz->fit_fractions();
-
-    auto param2 = fitter.getParams()->Parameters();
-
-    PrintFF(ff);
-
-    makeToyDalitzPdfPlots(overallPdf);
+     auto param2 = fitter.getParams()->Parameters();
 
     saveParameters(param2, "Parametros_fit.txt");
 
+    //auto ff = signaldalitz->fit_fractions();
+
+   
+    //PrintFF(ff);
+
+    makeToyDalitzPdfPlots(overallPdf);
+
+    
 
 }
 

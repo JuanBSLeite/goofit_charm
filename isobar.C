@@ -17,7 +17,7 @@ double s12_max = (D_MASS   - d2_MASS)*(D_MASS - d2_MASS);
 double m12_min = s12_min;
 double m12_max = s12_max;
 
-int slices = 60;
+//int slices = 60;
 
 TComplex plainBW(double *x, double *par) {
 
@@ -98,7 +98,7 @@ double SWave_theta(double *x, double *par){
     return (plainBW(x,par)  + flatte(x,&par[4]) ).Theta();
 }
 
-void PWACoefs(double val){
+void PWACoefs(int slices,double val){
 
     double s = 0;
     double bin_amp_real = 0;
@@ -106,7 +106,7 @@ void PWACoefs(double val){
 
     ofstream wr("files/PWACOEFS.txt");
 
-    double par[9] = {1.0,0.0,.480,.350,2.0,.0,.965,.165,4.21}; 
+    double par[9] = {1.0,0.0,.480,.350,4.0,.0,.965,.165,4.21}; 
 
     int temp = 0;
     int j = 1;
@@ -114,7 +114,7 @@ void PWACoefs(double val){
     for(int i = 0; i < slices; i++){
 
     	if(s<val){
-		s = m12_min + i*(1.8)*(val-m12_min)/(slices);
+		s = m12_min + i*(1.3)*(val-m12_min)/(slices);
 		temp++;
     	}else{
 	
@@ -122,7 +122,7 @@ void PWACoefs(double val){
 		j++;
 	}
 
-		TComplex v = ( plainBW(&s,par) + flatte(&s,&par[4]));
+		TComplex v = (plainBW(&s,par) +flatte(&s,&par[4]));
     		bin_amp_real = v.Re();
     		bin_amp_img = v.Im();
 

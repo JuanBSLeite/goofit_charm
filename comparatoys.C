@@ -47,9 +47,9 @@ lg->AddEntry(h0,"Isobar","l");
 lg->AddEntry(h1,"MIPWA","l");
 lg->Draw(); 
 
-h0->Sumw2();
-h0->Divide(h1);
-h0->Draw("E");
+//h0->Sumw2();
+//h0->Divide(h1);
+//h0->Draw("E");
 
 
 c1->SaveAs("toyDataComparacao_ratio.png");
