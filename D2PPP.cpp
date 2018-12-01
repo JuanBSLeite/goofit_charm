@@ -53,6 +53,7 @@ using namespace GooFit;
 using namespace ROOT;
 
 
+
 //Globals
 
 double pi_MASS  = 0.13957018; //GEV
@@ -75,8 +76,8 @@ fptype s12_max = POW2(D_MASS   - d2_MASS);
 fptype s13_min = POW2(d1_MASS  + d3_MASS);
 fptype s13_max = POW2(D_MASS   - d2_MASS);
 
-Observable s12("s12",s12_min,2.85); //s12^{2}
-Observable s13("s13",s13_min,2.85);
+Observable s12("s12",s12_min,s12_max); //s12^{2}
+Observable s13("s13",s13_min,s13_max);
 EventNumber eventNumber("eventNumber");
 
 DalitzPlotPdf* signaldalitz = nullptr;
@@ -348,12 +349,12 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     
     double f0_980_MASS     = 0.965;
     double f0_980_GPP     = 0.165;
-    double f0_980_GKK     = 4.21*f0_980_GPP;
+    double f0_980_GKK     = 4.21;
     double f0_980_amp     = 4.0;
     double f0_980_phase    = 0.0;
 
-    double f0_1370_MASS     = 1.400;
-    double f0_1370_WIDTH    = 0.3;
+    double f0_1370_MASS     = 1.504;
+    double f0_1370_WIDTH    = 0.109;
     double f0_1370_amp      = 1.0;
     double f0_1370_phase    = 0;
 
@@ -487,10 +488,10 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     //dtoppp.resonances.push_back(omega_12);
     dtoppp.resonances.push_back(f2_12);
     //dtoppp.resonances.push_back(sigma_12);
-    dtoppp.resonances.push_back(f0_980_12);
-    dtoppp.resonances.push_back(f0_1370_12);
+    //dtoppp.resonances.push_back(f0_980_12);
+    //dtoppp.resonances.push_back(f0_1370_12);
     //dtoppp.resonances.push_back(nonr);
-    //dtoppp.resonances.push_back(swave_12);
+    dtoppp.resonances.push_back(swave_12);
 
     if(!eff) {
         // By default create a constant efficiency.
@@ -779,12 +780,14 @@ void runMakeToyDalitzPdfPlots(std::string name){
 
 }
 
-void saveParameters(const std::vector<double> &param, std::string file){
+void saveParameters(const std::vector<ROOT::Minuit2::MinuitParameter> &param, std::string file){
+
+   // std::cout << param[0].GetName() << std::endl;
 
     ofstream wr(file.c_str());
 
     for(int i = 0; i < param.size(); i++){
-        wr << i <<'\t'<< param[i] << endl;
+        wr << param[i].GetName() <<'\t'<< param[i].Value()<< '\t' << param[i].Error() << endl;
     }
     
     wr.close();
@@ -795,8 +798,8 @@ void saveParameters(const std::vector<double> &param, std::string file){
 
 void runtoyfit(std::string name, int sample_number) {
 
-    s12.setNumBins(1500);
-    s13.setNumBins(1500);
+    s12.setNumBins(2000);
+    s13.setNumBins(2000);
 
     getdata(name);
 
@@ -828,24 +831,27 @@ void runtoyfit(std::string name, int sample_number) {
     overallPdf->setData(Data);
     signaldalitz->setDataSize(Data->getNumEvents());
 
+    //ROOT::Math::MinimizerOptions opt;
+    //opt.SetTolerance(0.01);
     FitManagerMinuit2 fitter(overallPdf);
-    fitter.setVerbosity(-1);
+    fitter.setVerbosity(2);
 
     std::string command = "mkdir -p Fit";
     if(system(command.c_str()) != 0)
         throw GooFit::GeneralError("Making `Fit` directory failed");
 
 
-    const std::vector<double> params_iniciais  = fitter.getParams()->make_minuit_vector();
+    auto params = fitter.getParams()->Parameters();
 
     string input_name = fmt::format("Fit/fit_parameters_inicial.txt");
     
-    saveParameters(params_iniciais, input_name);
+    saveParameters(params, input_name);
 
     
     auto func_min = fitter.fit();
 
-    const std::vector<double> params  = fitter.getParams()->make_minuit_vector();
+    params.clear();
+    params  = fitter.getParams()->Parameters();
 
     string output_name = fmt::format("Fit/fit_parameters_{0}.txt",sample_number);
     
@@ -864,31 +870,33 @@ void genfitplot(int nsamples,int nvar){
 
     double vec_inicial[nvar];
     
-    //creating histograms
-    TH1D* hist[nvar];
-    string var_name;
-    for(int i=0; i < nvar; i++){
-        var_name = fmt::format("variable_{0}",i);
-        hist[i] = new TH1D(var_name.c_str(),var_name.c_str(),200,-.4,.4);
-    }
-
-    //getting inicial parameters
+   //getting inicial parameters
 
     printf("Initial Parameters");
     int index = 0;
     double inicial_var = 0;
+    double inicial_error =0;
+    std::string inicial_name;
     ifstream r_inicial("Fit/fit_parameters_inicial.txt");
-    while(r_inicial >> index >> inicial_var){
+	
+    TFile f("Fit/results.root","RECREATE");
+    TTree *t = new TTree("t","Variables"); 
 
-        vec_inicial[index] = inicial_var;
-        printf("%d --> %lg \n",index,inicial_var);
-
+    double val[nvar];
+    double val_error[nvar];
+    //std::fill(val,val+nvar,0);
+    //std::fill(val_error,val_error+nvar,0);
+  
+    while(r_inicial >> inicial_name >> inicial_var >> inicial_error){
+            vec_inicial[index] = inicial_var;
+	    t->Branch(inicial_name.c_str(),val+index);
+	    t->Branch((inicial_name+"_error").c_str(),val_error+index);
+            index++;
     }
 
     //getting fit parameters
-    double test;
-    string name;
-
+   std::string name;
+ 
        for(int i = 0; i < nsamples; i++){
         
             name = fmt::format("Fit/fit_parameters_{0}.txt",i);
@@ -898,13 +906,20 @@ void genfitplot(int nsamples,int nvar){
 
                 int index_fit = 0;
                 double fit_var = 0;
+		double fit_error=0;
+		std::string fit_name;
 
-                while(r_fit >> index_fit >> fit_var){
+                while(r_fit >> fit_name >> fit_var >> fit_error){
 
-                    test = vec_inicial[index_fit] - fit_var;
-                    hist[index_fit]->Fill(test);
+                    val[index_fit] = fit_var;
+		    val_error[index_fit] = fit_error;
 
+		    cout << val[index_fit] << " " << val_error[index_fit] << endl;	     
+		    index_fit++;
                 }
+
+		 t->Fill();
+
             
 
                 r_fit.close();
@@ -913,19 +928,17 @@ void genfitplot(int nsamples,int nvar){
             }
        }
 
-    TFile f("Fit/results.root","RECREATE");
-
-       for(int i = 0; i < nvar ; i++){
-	    printf("Mean_var[%d] = %lg \n",i,hist[i]->GetMean());
-            hist[i]->Write();       
-       } 
-    f.Close();
+   t->Write();
+   f.Close();
 }
 
 
 
 int main(int argc, char **argv){
 
+    //TROOT* groot = ROOT::GetROOT();
+    //groot->SetBatch(1);
+    //groot->ProcessLine( "gErrorIgnoreLevel = 1001;");
     int sample_number = 0 ;
 
     GooFit::Application app{"D2PPP",argc,argv};
