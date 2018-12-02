@@ -1,10 +1,24 @@
+#include <iostream>
+#include <fstream>
+#include <stdlib.h>
+#include <TTree.h>
 #include <math.h>
 #include <TMath.h>
 #include <TGraphErrors.h>
 #include <TVector.h>
+#include <string.h>
+#include <TCanvas.h>
+using namespace std;
 
+void compare_results( int N=50, int  n=0);
 
-void compare_results(const int N,const int n){
+int main(int argc, char** argv){
+
+compare_results(atoi(argv[1]),atoi(argv[2]));
+
+}
+
+void compare_results( int N, int n){
 
 std::ifstream r("files/PWACOEFS.txt");
 double s[N];
@@ -132,31 +146,11 @@ for(int i = 0 ; i < N ; i++){
 		printf("img_coef(%d) = incompatible(%lg) \n",i,cpi);	
 		count_icp++;
 	}
+
+
 }
 
 printf("\n\n %d compatibles points and %d incompatible points \n\n",count_cp,count_icp);
-
-/*
-TCanvas foo;
-
-TGraphErrors gr1("Parametros_iniciais.txt","%lg%lg%*lg%*lg%*lg");
-gr1.Draw("AP*");
-TGraphErrors gr2("Parametros_fit.txt","%lg%lg%*lg%lg%*lg");
-gr2.SetMarkerColor(kRed);
-gr2.SetLineColor(kRed);
-gr2.Draw("Psame");
-foo.SaveAs("plots/parte_imaginaria.png");
-
-
-TGraphErrors gr3("Parametros_iniciais.txt","%lg%*lg%lg%*lg%lg");
-gr3.Draw("AP*");
-TGraphErrors gr4("Parametros_fit.txt","%lg%*lg%lg%*lg%lg");
-gr4.SetMarkerColor(kRed);
-gr4.SetLineColor(kRed);
-gr4.Draw("Psame");
-foo.SaveAs("plots/parte_real.png");
-
-
-*/
-
 }
+
+

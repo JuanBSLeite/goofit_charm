@@ -127,7 +127,7 @@ Data = new UnbinnedDataSet({s12,s13,eventNumber});
         th1->GetYaxis()->SetTitle("#pi^{-}#pi^{+} [Gev/c^{2}]");
         th1->SetStats(0);
         th1->Draw("COLZ");
-        foo.SaveAs("plots/PDF.png");
+  //      foo.SaveAs("plots/PDF.png");
         std::cout << "PDF plotted" << '\n';
     }
 
@@ -156,7 +156,7 @@ Data = new UnbinnedDataSet({s12,s13,eventNumber});
     TCanvas foo;
     th2.Draw("COLZ");
     th2.SetStats(0);
-    foo.SaveAs("plots/toyData.png");
+//    foo.SaveAs("plots/toyData.png");
 
     std::cout << "toy data plotted" << '\n';
     std::cout << "toy Generation end!" << '\n';
@@ -479,7 +479,7 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     ResonancePdf *nonr = new Resonances::NonRes("nonr", nonr_amp_real, nonr_amp_imag);
 
     //MIPWA
-    ResonancePdf *swave_12 = loadPWAResonance(pwa_file, true);
+    ResonancePdf *swave_12 = loadPWAResonance(pwa_file, false);
 
     //Pushing Resonances 
 
@@ -835,6 +835,7 @@ void runtoyfit(std::string name, int sample_number) {
     //opt.SetTolerance(0.01);
     FitManagerMinuit2 fitter(overallPdf);
     fitter.setVerbosity(2);
+    //fitter.setPrint(0);
 
     std::string command = "mkdir -p Fit";
     if(system(command.c_str()) != 0)
