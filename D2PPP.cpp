@@ -815,7 +815,9 @@ void saveParameters(const std::vector<ROOT::Minuit2::MinuitParameter> &param, st
     ofstream wr(file.c_str());
 
     for(int i = 0; i < param.size(); i++){
-        wr << param[i].GetName() <<'\t'<< param[i].Value()<< '\t' << param[i].Error() << endl;
+        if( !(param[i].IsConst() || param[i].IsFixed()) ){
+            wr << param[i].GetName() <<'\t'<< param[i].Value()<< '\t' << param[i].Error() << endl;
+        }
     }
     
     wr.close();
@@ -924,70 +926,100 @@ void normStudy(std::string name, int sample_number,int nbins_i,int nbins_f){
 
 
 
-void genfitplot(int nsamples,int nvar){
+void genfitplot(const int nsamples,const int nvar){
 
-    double vec_inicial[nvar];
-    
-   //getting inicial parameters
+    ifstream r_i("Fit/fit_parameters_inicial.txt");
 
-    printf("Initial Parameters");
-    int index = 0;
-    double inicial_var = 0;
-    double inicial_error =0;
-    std::string inicial_name;
-    ifstream r_inicial("Fit/fit_parameters_inicial.txt");
-	
-    TFile f("Fit/results.root","RECREATE");
-    TTree *t = new TTree("t","Variables"); 
+    double val_i,error_i;
+    std::string foo_i;
+    double vec_val_i[nvar];
+    double vec_error_i[nvar];
 
-    double val[nvar];
-    double val_error[nvar];
-    //std::fill(val,val+nvar,0);
-    //std::fill(val_error,val_error+nvar,0);
-  
-    while(r_inicial >> inicial_name >> inicial_var >> inicial_error){
-            vec_inicial[index] = inicial_var;
-	    t->Branch(inicial_name.c_str(),val+index);
-	    t->Branch((inicial_name+"_error").c_str(),val_error+index);
-            index++;
+    size_t l =0;
+    while(r_i >> foo_i >> val_i >> error_i){
+
+        vec_val_i[l] = val_i;
+        vec_error_i[l] = error_i;
+        l++;
     }
 
-    //getting fit parameters
-   std::string name;
- 
-       for(int i = 0; i < nsamples; i++){
-        
-            name = fmt::format("Fit/fit_parameters_{0}.txt",i);
-            ifstream r_fit(name.c_str());
+    r_i.close();
 
-            if(r_fit.is_open()){
+    std::string name;
+    double val;
+    double error;
+    double vec_val[nvar][nsamples];
+    double vec_error[nvar][nsamples];
+    std::string vec_name[nvar];
 
-                int index_fit = 0;
-                double fit_var = 0;
-		double fit_error=0;
-		std::string fit_name;
+    size_t val_index, var_index = 0;
 
-                while(r_fit >> fit_name >> fit_var >> fit_error){
+    for(size_t i = 0; i < nsamples; i++){
+       
+        name = fmt::format("Fit/fit_parameters_{0}.txt",i);
+        ifstream rd(name.c_str());
+    
+        while(rd >> name >> val >> error){
 
-                    val[index_fit] = fit_var;
-		    val_error[index_fit] = fit_error;
+            vec_val[var_index][val_index] = val;
+            vec_error[var_index][val_index] = error;
+            vec_name[var_index] = name;
+            var_index++;
+   
+         }
 
-		    cout << val[index_fit] << " " << val_error[index_fit] << endl;	     
-		    index_fit++;
-                }
+        rd.close();
+        val_index++;
+        var_index = 0;
 
-		 t->Fill();
+    }
 
-            
+    TH1F *hist_var[nvar];
+    TH1F *hist_error[nvar];
+    double graph_values[nvar];
+    double graph_errors[nvar];
+    double index[nvar];
+    double index_error[nvar] = {0};
 
-                r_fit.close();
-            }else{
-                printf("Error \n");
-            }
-       }
+    TFile f("histo.root","RECREATE");
 
-   t->Write();
-   f.Close();
+    for(size_t i = 0; i < nvar; i++){
+
+        index[i] = i;
+        std::sort(vec_val[i], vec_val[i] + nsamples);
+        std::sort(vec_error[i], vec_error[i] + nsamples);
+
+        hist_var[i] = new TH1F( (vec_name[i] + "value").c_str(),(vec_name[i] + "value").c_str(),20,
+                               vec_val[i][0],vec_val[i][nsamples]);
+        hist_error[i] = new TH1F( (vec_name[i] + "error").c_str(),(vec_name[i] + "error").c_str(),20,
+                               vec_error[i][0],vec_error[i][nsamples]);
+
+        for(size_t j=0; j < nsamples; j++){
+            hist_var[i]->Fill(vec_val[i][j]);
+            hist_error[i]->Fill(vec_error[i][j]);
+        }
+
+        hist_var[i]->Write();
+        hist_error[i]->Write();
+       
+        graph_values[i] = hist_var[i]->GetMean();
+        graph_errors[i] = hist_error[i]->GetMean();
+    }
+
+    f.Close();
+    
+    TGraphErrors *graph_result = new TGraphErrors(nvar,index,graph_values,index_error,graph_errors);
+    TGraphErrors *graph_initial = new TGraphErrors(nvar,index,vec_val_i,index_error,vec_error_i);
+    TCanvas foo;
+    graph_result->SetMarkerStyle(kCircle);
+    graph_result->SetMarkerColor(kRed);
+    graph_result->Draw("AP");
+    graph_initial->SetMarkerStyle(20);
+    graph_result->SetMarkerColor(kBlue);
+    graph_initial->Draw("Psame");
+
+    foo.SaveAs("test.png");
+
 }
 
 
