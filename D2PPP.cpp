@@ -518,7 +518,7 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     dtoppp.resonances.push_back(f0_980_12);
     //dtoppp.resonances.push_back(f0_1370_12);
     dtoppp.resonances.push_back(f0_1500_12);
-    dtoppp.resonances.push_back(nonr);
+    //dtoppp.resonances.push_back(nonr);
     //dtoppp.resonances.push_back(be);
     //dtoppp.resonances.push_back(swave_12);
 
