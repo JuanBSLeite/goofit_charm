@@ -119,30 +119,14 @@ DalitzPlotter dp(overallsignal,signaldalitz);
 Data = new UnbinnedDataSet({s12,s13,eventNumber});
 
     std::cout << "Toy Generation begin!" << '\n';
-    {
-        TCanvas foo;
-        auto th1 = dp.make2D();
-        th1->Rebin2D(5,5);
-        th1->GetXaxis()->SetTitle("#pi^{-}#pi^{+} [Gev/c^{2}]");
-        th1->GetYaxis()->SetTitle("#pi^{-}#pi^{+} [Gev/c^{2}]");
-        th1->SetStats(0);
-        th1->Draw("COLZ");
-        foo.SaveAs("plots/PDF.png");
-        std::cout << "PDF plotted" << '\n';
-    }
-
-        dp.fillDataSetMC(*Data,nEvents);
-        TH2F th2("toyData", "", 200, s12.getLowerLimit(), s12.getUpperLimit(), 200, s13.getLowerLimit(),
-                         s13.getUpperLimit());
-    th2.GetXaxis()->SetTitle("#pi^{-}#pi^{+} [Gev/c^{2}]");
-    th2.GetYaxis()->SetTitle("#pi^{-}#pi^{+} [Gev/c^{2}]");
-
+   
+    dp.fillDataSetMC(*Data,nEvents);
+       
     {
         ofstream w(name);
 
             for (size_t i = 0; i < Data->getNumEvents(); i++) {
                 Data->loadEvent(i);
-                th2.Fill(s12, s13);
                 w << i << "\t" << std::setprecision(6) << s12.getValue() << "\t" << s13.getValue() << '\n';
 
             }
@@ -153,12 +137,6 @@ Data = new UnbinnedDataSet({s12,s13,eventNumber});
 
     }
 
-    TCanvas foo;
-    th2.Draw("COLZ");
-    th2.SetStats(0);
-    foo.SaveAs("plots/toyData.png");
-
-    std::cout << "toy data plotted" << '\n';
     std::cout << "toy Generation end!" << '\n';
 
 }
@@ -348,95 +326,54 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     double f0_980_MASS     = 0.977;
     double f0_980_GPP     = 0.09;
     double f0_980_GKK     = 0.02;
-    double f0_980_amp     = 4.0;
-    double f0_980_phase    = 4.0;
-
-    double f0_1370_MASS     = 1.434;
-    double f0_1370_WIDTH    = 0.173;
-    double f0_1370_amp      = 1.0;
-    double f0_1370_phase    = 0.;
-
-    double rho_MASS     = 0.77526;
-    double rho_WIDTH    = 0.1478;
-    double rho_amp      = 1.0;
-    double rho_phase    = 0.;
-    
-    double rho_1450_MASS     = 1.32635;
-    double rho_1450_WIDTH    = 0.32413;
-    double rho_1450_amp      = 1.0;
-    double rho_1450_phase    = 0.0;
-
-    double omega_MASS   = 0.78265;
-    double omega_WIDTH  = 0.00849;
-    double omega_amp    = 1.0;
-    double omega_phase  = 0.;
-
-    double f2_MASS     = 1.2755;
-    double f2_WIDTH    = 0.1867;
-    double f2_amp      = 1.0;
-    double f2_phase    = 0.;
-
-    double sigma_MASS  = 0.480;
-    double sigma_WIDTH = 0.350;
-    double sigma_amp   = 1.;
-    double sigma_phase = 0.;
+    double f0_980_amp     = 1.0;
+    double f0_980_img    = 0.0;
 
     double f0_1500_MASS  = 1.504;
     double f0_1500_WIDTH = .109;
-    double f0_1500_amp   = 1.0;
-    double f0_1500_phase = 0.;
+    double f0_1500_amp   = .3;
+    double f0_1500_img = 0.8;
 
-    //rho(770)
-    Variable v_rho_Mass("rho_MASS",rho_MASS,0.00025,rho_MASS*0.5,rho_MASS*1.5);
-    Variable v_rho_Width("rho_WIDTH",rho_WIDTH,0.0009,rho_WIDTH*0.5,rho_WIDTH*1.5);
-    Variable v_rho_amp_real("rho_amp_real",rho_amp*cos(rho_phase), 0.001, -100.0, +100.0);
-    Variable v_rho_amp_img("rho_amp_img",rho_amp*sin(rho_phase), 0.001, -100.0, +100.0);
+    double omega_MASS   = 0.78265;
+    double omega_WIDTH  = 0.00849;
+    double omega_amp    = .8;
+    double omega_img  = .8;
 
-    //rho(1450)
-    Variable v_rho_1450_Mass("rho_1450_MASS",rho_1450_MASS,0.0325,rho_1450_MASS*0.5,rho_1450_MASS*1.5);
-    Variable v_rho_1450_Width("rho_1450_WIDTH",rho_1450_WIDTH,0.12,rho_1450_WIDTH*0.5,rho_1450_WIDTH*1.5);
-    Variable v_rho_1450_amp_real("rho_1450_amp_real",rho_1450_amp*cos(rho_1450_phase), 0.001, -100.0, +100.0);
-    Variable v_rho_1450_amp_img("rho_1450_amp_img",rho_1450_amp*sin(rho_1450_phase), 0.001, -100.0, +100.0);
+    double f2_MASS     = 1.2755;
+    double f2_WIDTH    = 0.1867;
+    double f2_amp      = .3;
+    double f2_img    = .6;
 
+    
 
     //omega(782)
     Variable v_omega_Mass("omega_MASS",omega_MASS);
     Variable v_omega_Width("omega_WIDTH",omega_WIDTH);
-    Variable v_omega_amp_real("omega_amp_real",omega_amp*cos(omega_phase), 0.001, -100.0, +100.0);
-    Variable v_omega_amp_img("omega_amp_img",omega_amp*sin(omega_phase), 0.001, -100.0, +100.0);
+    Variable v_omega_amp_real("omega_amp_real",omega_amp, 0.001, -100.0, +100.0);
+    Variable v_omega_amp_img("omega_amp_img",omega_img, 0.001, -100.0, +100.0);
 
     //f2(1270)
     Variable v_f2_Mass("f2_MASS",f2_MASS,0.0008,f2_MASS*0.5,f2_MASS*1.5);
     Variable v_f2_Width("f2_WIDTH",f2_WIDTH,0.0025,f2_WIDTH*0.5,f2_WIDTH*1.5);
-    Variable v_f2_amp_real("f2_amp_real",f2_amp*cos(f2_phase), 0.001, -100.0, +100.0);
-    Variable v_f2_amp_img("f2_amp_img",f2_amp*sin(f2_phase), 0.001, -100.0, +100.0);
-
-    //sigma(480)
-    Variable v_sigma_Mass("sigma_MASS",sigma_MASS,0.01,sigma_MASS*0.5,sigma_MASS*1.5);
-    Variable v_sigma_Width("sigma_WIDTH",sigma_WIDTH,0.01,sigma_WIDTH*0.5,sigma_WIDTH*1.5);
-    Variable v_sigma_amp_real("sigma_amp_real",sigma_amp*cos(sigma_phase), 0.001, -100.0, +100.0);
-    Variable v_sigma_amp_img("sigma_amp_img",sigma_amp*sin(sigma_phase), 0.001, -100.0, +100.0);
+    Variable v_f2_amp_real("f2_amp_real",f2_amp, 0.001, -100.0, +100.0);
+    Variable v_f2_amp_img("f2_amp_img",f2_img, 0.001, -100.0, +100.0);
 
     //f0(980)
     Variable v_f0_980_Mass("f0_980_MASS",f0_980_MASS,3.0,f0_980_MASS*0.5,f0_980_MASS*1.5);
     Variable v_f0_980_GPP("f0_980_GPP",f0_980_GPP,0.01,f0_980_GPP*0,f0_980_GPP*20.0);
     Variable v_f0_980_GKK("f0_980_GKK",f0_980_GKK,0.02,f0_980_GKK*0,f0_980_GKK*3.0);
-    Variable v_f0_980_amp_real("f0_980_amp_real",f0_980_amp*cos(f0_980_phase), 0.001, -100.0, +100.0);
-    Variable v_f0_980_amp_img("f0_980_amp_img",f0_980_amp*sin(f0_980_phase), 0.001, -100.0, +100.0);
+    Variable v_f0_980_amp_real("f0_980_amp_real",f0_980_amp, 0.001, -100.0, +100.0);
+    Variable v_f0_980_amp_img("f0_980_amp_img",f0_980_img, 0.001, -100.0, +100.0);
 
     v_f0_980_amp_real.setFixed(true);
     v_f0_980_amp_img.setFixed(true);
 
-    //f0(1370)
-    Variable v_f0_1370_Mass("f0_1370_MASS",f0_1370_MASS,0.018,f0_1370_MASS*0.1,f0_1370_MASS*1.5);
-    Variable v_f0_1370_Width("f0_1370_Width",f0_1370_WIDTH,0.032,0.1,1.);
-    Variable v_f0_1370_amp_real("f0_amp_1370_real",f0_1370_amp*cos(f0_1370_phase), 0.001, -100.0, +100.0);
-    Variable v_f0_1370_amp_img("f0_1370_amp_img",f0_1370_amp*sin(f0_1370_phase), 0.001, -100.0, +100.0);
-
+    
+    //f0(1500)
     Variable v_f0_1500_Mass("f0_1500_MASS",f0_1500_MASS,0.006,f0_1500_MASS*0.1,f0_1500_MASS*1.5);
     Variable v_f0_1500_Width("f0_1500_Width",f0_1500_WIDTH,0.007,0.1,1.);
-    Variable v_f0_1500_amp_real("f0_amp_1500_real",f0_1500_amp*cos(f0_1500_phase), 0.001, -100.0, +100.0);
-    Variable v_f0_1500_amp_img("f0_1500_amp_img",f0_1500_amp*sin(f0_1500_phase), 0.001, -100.0, +100.0);
+    Variable v_f0_1500_amp_real("f0_amp_1500_real",f0_1500_amp, 0.001, -100.0, +100.0);
+    Variable v_f0_1500_amp_img("f0_1500_amp_img",f0_1500_img, 0.001, -100.0, +100.0);
 
 
     //NR
@@ -448,65 +385,40 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     Variable be_coef("be_coef", 1.9, 0.001, -200.0, +200.0);
     //Masses and Widths fixed
 
-    v_rho_Mass.setFixed(true);
-    v_rho_Width.setFixed(true);
-    v_rho_1450_amp_real.setFixed(true);
-    v_rho_1450_amp_img.setFixed(true);
-
-    v_rho_1450_Mass.setFixed(true);
-    v_rho_1450_Width.setFixed(true);
-
     v_omega_Mass.setFixed(true);
     v_omega_Width.setFixed(true);
-    //v_omega_amp_real.setFixed(true);
-    //v_omega_amp_img.setFixed(true);
+   
 
     v_f2_Mass.setFixed(true);
     v_f2_Width.setFixed(true);
 
-    v_sigma_Mass.setFixed(true);
-    v_sigma_Width.setFixed(true);
 
     v_f0_980_Mass.setFixed(true);
     v_f0_980_GKK.setFixed(true);
     v_f0_980_GPP.setFixed(true);
 
 
-    v_f0_1370_Mass.setFixed(true);
-    v_f0_1370_Width.setFixed(true);
-
-
     v_f0_1500_Mass.setFixed(true);
     v_f0_1500_Width.setFixed(true);
 
-    //be_real.setFixed(true);
-    //be_imag.setFixed(true);
-    be_coef.setFixed(true);
+     be_coef.setFixed(true);
     
    //setting resonances
-    ResonancePdf* rho_12 = new Resonances::GS("rho",v_rho_amp_real,v_rho_amp_img,v_rho_Mass,v_rho_Width,(unsigned int)1,PAIR_12,true);
-       
-    ResonancePdf* rho_1450_12 = new Resonances::RBW("rho_1450",v_rho_1450_amp_real,v_rho_1450_amp_img,v_rho_1450_Mass,v_rho_1450_Width,(unsigned int)1,PAIR_12,true);
-    
+   
     ResonancePdf* omega_12 = new Resonances::GS("omega",v_omega_amp_real,v_omega_amp_img,v_omega_Mass,v_omega_Width,1,PAIR_12,true);
     
     ResonancePdf* f2_12 = new Resonances::RBW("f2",v_f2_amp_real,v_f2_amp_img,v_f2_Mass,v_f2_Width,2,PAIR_12,true);
-       
-    ResonancePdf* sigma_12 = new Resonances::RBW("sigma",v_sigma_amp_real,v_sigma_amp_img,v_sigma_Mass,v_sigma_Width,(unsigned int)0,PAIR_12,true);
-   
-    ResonancePdf* f0_1370_12 = new Resonances::RBW("f0_1370_12",v_f0_1370_amp_real,v_f0_1370_amp_img,v_f0_1370_Mass,v_f0_1370_Width,(unsigned int)0,PAIR_12,true);
-      
+  
     ResonancePdf* f0_980_12 = new Resonances::FLATTE("f0_980",v_f0_980_amp_real,v_f0_980_amp_img,v_f0_980_Mass,v_f0_980_GPP,v_f0_980_GKK,PAIR_12,true);
 
-    ResonancePdf* f0_1500_12 = new Resonances::RBW("f0_1500_12",v_f0_1500_amp_real,v_f0_1500_amp_img,v_f0_1500_Mass,v_f0_1500_Width,(unsigned int)0,PAIR_12,true);
-     
+    ResonancePdf* f0_1500_12 = new Resonances::RBW("f0_1500_12",v_f0_1500_amp_real,v_f0_1500_amp_img,v_f0_1500_Mass,v_f0_1500_Width,(unsigned int)0,PAIR_12,true);  
      
     ResonancePdf *nonr = new Resonances::NonRes("nonr", nonr_amp_real, nonr_amp_imag);
 
     ResonancePdf *be   = new Resonances::BoseEinstein("be",be_real,be_imag,be_coef);
 
     //MIPWA
-    ResonancePdf *swave_12 = loadPWAResonance(pwa_file, true);
+    //ResonancePdf *swave_12 = loadPWAResonance(pwa_file, true);
 
     //Pushing Resonances 
 
@@ -925,7 +837,7 @@ void normStudy(std::string name, int sample_number,int nbins_i,int nbins_f){
 
 
 
-
+/*
 void genfitplot(const int nsamples,const int nvar){
 
     ifstream r_i("Fit/fit_parameters_inicial.txt");
@@ -979,7 +891,7 @@ void genfitplot(const int nsamples,const int nvar){
     double graph_values[nvar];
     double graph_errors[nvar];
     double index[nvar];
-    double index_error[nvar] = {0};
+    double index_error[nvar] ;
 
     TFile f("histo.root","RECREATE");
 
@@ -989,12 +901,13 @@ void genfitplot(const int nsamples,const int nvar){
         std::sort(vec_val[i], vec_val[i] + nsamples);
         std::sort(vec_error[i], vec_error[i] + nsamples);
 
-        hist_var[i] = new TH1F( (vec_name[i] + "value").c_str(),(vec_name[i] + "value").c_str(),20,
+        hist_var[i] = new TH1F( (vec_name[i] + "_value").c_str(),(vec_name[i] + "_value").c_str(),1,
                                vec_val[i][0],vec_val[i][nsamples]);
-        hist_error[i] = new TH1F( (vec_name[i] + "error").c_str(),(vec_name[i] + "error").c_str(),20,
+        hist_error[i] = new TH1F( (vec_name[i] + "_error").c_str(),(vec_name[i] + "_error").c_str(),1,
                                vec_error[i][0],vec_error[i][nsamples]);
 
         for(size_t j=0; j < nsamples; j++){
+            printf("(%d,%d) = [%lg,%lg] \n",i,j,vec_val[i][j],vec_error[i][j]);
             hist_var[i]->Fill(vec_val[i][j]);
             hist_error[i]->Fill(vec_error[i][j]);
         }
@@ -1020,6 +933,73 @@ void genfitplot(const int nsamples,const int nvar){
 
     foo.SaveAs("test.png");
 
+}*/
+
+
+void genfitplot(int nsamples,int nvar){
+
+    double vec_inicial[nvar];
+    
+   //getting inicial parameters
+
+    printf("Initial Parameters");
+    int index = 0;
+    double inicial_var = 0;
+    double inicial_error =0;
+    std::string inicial_name;
+    ifstream r_inicial("Fit/fit_parameters_inicial.txt");
+	
+    TFile f("Fit/results.root","RECREATE");
+    TTree *t = new TTree("t","Variables"); 
+
+    double val[nvar];
+    double val_error[nvar];
+    //std::fill(val,val+nvar,0);
+    //std::fill(val_error,val_error+nvar,0);
+  
+    while(r_inicial >> inicial_name >> inicial_var >> inicial_error){
+            vec_inicial[index] = inicial_var;
+	    t->Branch(inicial_name.c_str(),val+index);
+	    t->Branch((inicial_name+"_error").c_str(),val_error+index);
+            index++;
+    }
+
+    //getting fit parameters
+   std::string name;
+ 
+       for(int i = 0; i < nsamples; i++){
+        
+            name = fmt::format("Fit/fit_parameters_{0}.txt",i);
+            ifstream r_fit(name.c_str());
+
+            if(r_fit.is_open()){
+
+                int index_fit = 0;
+                double fit_var = 0;
+		double fit_error=0;
+		std::string fit_name;
+
+                while(r_fit >> fit_name >> fit_var >> fit_error){
+
+                    val[index_fit] = fit_var;
+		    val_error[index_fit] = fit_error;
+
+		    cout << val[index_fit] << " " << val_error[index_fit] << endl;	     
+		    index_fit++;
+                }
+
+		 t->Fill();
+
+            
+
+                r_fit.close();
+            }else{
+                printf("Error \n");
+            }
+       }
+
+   t->Write();
+   f.Close();
 }
 
 
