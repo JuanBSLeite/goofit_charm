@@ -308,13 +308,13 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
 
     double f0_1500_MASS  = 1.505;
     double f0_1500_WIDTH = .109;
-    double f0_1500_amp   = .5;
-    double f0_1500_img = 0.5;
+    double f0_1500_amp   = 0.3;
+    double f0_1500_img = 0.8;
 
     double f0_X_MASS  = 1.430;
     double f0_X_WIDTH = 0.320;
-    double f0_X_amp   = .3;
-    double f0_X_img = 0.8;
+    double f0_X_amp   = 0.5;
+    double f0_X_img = 0.5;
 
     double omega_MASS   = 0.78265;
     double omega_WIDTH  = 0.00849;
@@ -424,7 +424,7 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     ResonancePdf *be   = new Resonances::BoseEinstein("be",be_real,be_imag,be_coef);
 
     //MIPWA
-   ResonancePdf *swave_12 = loadPWAResonance(pwa_file, true);
+   //ResonancePdf *swave_12 = loadPWAResonance(pwa_file, true);
 
     //Pushing Resonances 
 
@@ -797,7 +797,7 @@ double runtoyfit(std::string name, int sample_number,int bins){
 
     string input_name = fmt::format("Fit/fit_parameters_inicial.txt");
     
-    saveParameters(params, input_name);
+    saveParameters(params, input_name); 
 
     
     auto func_min = fitter.fit();
@@ -1075,7 +1075,7 @@ int main(int argc, char **argv){
     
     if(*plot){
         CLI::AutoTimer timer("Plot model and data");
-        runMakeToyDalitzPdfPlots("D2PPP_toy.txt");
+        runMakeToyDalitzPdfPlots("MC/MC_Toy_0.txt");
     }
 	
      if(*gfplot){
