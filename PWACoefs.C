@@ -106,7 +106,7 @@ void PWACoefs(int slices,double val){
 
     ofstream wr("files/PWACOEFS.txt");
 
-    double par[9] = {1.0,0.0,1.504,.109,4.0,.0,.965,.165,4.21}; 
+    double par[9] = {.3,.8,1.504,.109,1.0,.0,.965,.165,4.21}; 
 
     int temp = 0;
     int j = 1;

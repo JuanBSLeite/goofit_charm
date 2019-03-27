@@ -418,7 +418,7 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     ResonancePdf *be   = new Resonances::BoseEinstein("be",be_real,be_imag,be_coef);
 
     //MIPWA
-    //ResonancePdf *swave_12 = loadPWAResonance(pwa_file, true);
+   ResonancePdf *swave_12 = loadPWAResonance(pwa_file, true);
 
     //Pushing Resonances 
 
@@ -427,12 +427,12 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     dtoppp.resonances.push_back(omega_12);
     dtoppp.resonances.push_back(f2_12);
     //dtoppp.resonances.push_back(sigma_12);
-    dtoppp.resonances.push_back(f0_980_12);
+   //dtoppp.resonances.push_back(f0_980_12);
     //dtoppp.resonances.push_back(f0_1370_12);
-    dtoppp.resonances.push_back(f0_1500_12);
+   //dtoppp.resonances.push_back(f0_1500_12);
     //dtoppp.resonances.push_back(nonr);
     //dtoppp.resonances.push_back(be);
-    //dtoppp.resonances.push_back(swave_12);
+    dtoppp.resonances.push_back(swave_12);
 
     if(!eff) {
         // By default create a constant efficiency.
