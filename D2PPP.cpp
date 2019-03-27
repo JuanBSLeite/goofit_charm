@@ -170,18 +170,18 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
 
     }
 
-    Variable swave_amp_real("swave_amp_real", 1.0,-100.0,+100.0);
-    Variable swave_amp_imag("swave_amp_imag", 0.0,-100.0,+100.0);
+    Variable swave_real("swave_real", 1.0,-100.0,+100.0);
+    Variable swave_imag("swave_imag", 0.0,-100.0,+100.0);
 
     if(fixAmp) {
-        swave_amp_real.setValue(1.);
-        swave_amp_imag.setValue(0.);
-        swave_amp_real.setFixed(true);
-        swave_amp_imag.setFixed(true);
+        swave_real.setValue(1.);
+        swave_imag.setValue(0.);
+        swave_real.setFixed(true);
+        swave_imag.setFixed(true);
     }
     cout << "Numbers loaded: " << HH_bin_limits.size() << " / " << i << endl;
 
-    ResonancePdf *swave_12 = new Resonances::Spline("swave_12", swave_amp_real, swave_amp_imag, HH_bin_limits, pwa_coefs_amp, pwa_coefs_phs, PAIR_12, true);
+    ResonancePdf *swave_12 = new Resonances::Spline("swave_12", swave_real, swave_imag, HH_bin_limits, pwa_coefs_amp, pwa_coefs_phs, PAIR_12, true);
 
     return swave_12;
 } 
@@ -243,30 +243,7 @@ SmoothHistogramPdf* makeBackgroundPdf() {
     
     TH2F* bkgHistogram = (TH2F*)f->Get("h0");
 
-     /*
-     TTree *s = (TTree*)f->Get(tree_name.c_str());
-
-     double _s12, _s13;
-
-    s->SetBranchAddress("s12_pipi_DTF",&_s12);
-    s->SetBranchAddress("s13_pipi_DTF",&_s13);
-   
-
-    for(size_t i = 0; i < 100000 ; i++){
-
-            s->GetEntry(i);
-            s12.setValue(_s12);
-            s13.setValue(_s13);
-            eventNumber.setValue(i);
-            binBkgData->addEvent();
-
-    }
-
-for(int i = 0; i < 100000 ; i++){
-       cout << i << "\t" <<  s12.getValue() << '\t' << s13.getValue() << '\t' << binBkgData->getBinContent(i) << endl;
-    } */
-
-    TRandom3 donram(50);
+       TRandom3 donram(50);
     for(int i = 0; i < NevG; i++) {
         do {
             s12.setValue(donram.Uniform(s12.getLowerLimit(), s12.getUpperLimit()));
@@ -323,62 +300,84 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
 
     //Mass and width
     
-    double f0_980_MASS     = 0.977;
-    double f0_980_GPP     = 0.09;
-    double f0_980_GKK     = 0.02;
+    double f0_980_MASS     = 0.965;
+    double f0_980_GPP     = 0.165;
+    double f0_980_GKK     = 0.695;
     double f0_980_amp     = 1.0;
     double f0_980_img    = 0.0;
 
-    double f0_1500_MASS  = 1.504;
+    double f0_1500_MASS  = 1.505;
     double f0_1500_WIDTH = .109;
-    double f0_1500_amp   = .3;
-    double f0_1500_img = 0.8;
+    double f0_1500_amp   = .5;
+    double f0_1500_img = 0.5;
+
+    double f0_X_MASS  = 1.430;
+    double f0_X_WIDTH = 0.320;
+    double f0_X_amp   = .3;
+    double f0_X_img = 0.8;
 
     double omega_MASS   = 0.78265;
     double omega_WIDTH  = 0.00849;
     double omega_amp    = .8;
     double omega_img  = .8;
 
-    double f2_MASS     = 1.2755;
-    double f2_WIDTH    = 0.1867;
-    double f2_amp      = .3;
-    double f2_img    = .6;
+    double f2_1270_MASS     = 1.2755;
+    double f2_1270_WIDTH    = 0.1867;
+    double f2_1270_amp      = .3;
+    double f2_1270_img    = .8;
 
+    double f2_1525_MASS     = 1.525;
+    double f2_1525_WIDTH    = 0.073;
+    double f2_1525_amp      = .6;
+    double f2_1525_img    = .3;
     
 
     //omega(782)
     Variable v_omega_Mass("omega_MASS",omega_MASS);
     Variable v_omega_Width("omega_WIDTH",omega_WIDTH);
-    Variable v_omega_amp_real("omega_amp_real",omega_amp, 0.001, -100.0, +100.0);
-    Variable v_omega_amp_img("omega_amp_img",omega_img, 0.001, -100.0, +100.0);
+    Variable v_omega_real("omega_real",omega_amp, 0.001, -100.0, +100.0);
+    Variable v_omega_img("omega_img",omega_img, 0.001, -100.0, +100.0);
 
     //f2(1270)
-    Variable v_f2_Mass("f2_MASS",f2_MASS,0.0008,f2_MASS*0.5,f2_MASS*1.5);
-    Variable v_f2_Width("f2_WIDTH",f2_WIDTH,0.0025,f2_WIDTH*0.5,f2_WIDTH*1.5);
-    Variable v_f2_amp_real("f2_amp_real",f2_amp, 0.001, -100.0, +100.0);
-    Variable v_f2_amp_img("f2_amp_img",f2_img, 0.001, -100.0, +100.0);
+    Variable v_f2_1270_Mass("f2_1270_MASS",f2_1270_MASS,0.0008,f2_1270_MASS*0.5,f2_1270_MASS*1.5);
+    Variable v_f2_1270_Width("f2_1270_WIDTH",f2_1270_WIDTH,0.0025,f2_1270_WIDTH*0.5,f2_1270_WIDTH*1.5);
+    Variable v_f2_1270_real("f2_1270_real",f2_1270_amp, 0.001, -100.0, +100.0);
+    Variable v_f2_1270_img("f2_1270_img",f2_1270_img, 0.001, -100.0, +100.0);
+
+    //f2(1525)
+    Variable v_f2_1525_Mass("f2_1525_MASS",f2_1525_MASS,0.0008,f2_1525_MASS*0.5,f2_1525_MASS*1.5);
+    Variable v_f2_1525_Width("f2_1525_WIDTH",f2_1525_WIDTH,0.0025,f2_1525_WIDTH*0.5,f2_1525_WIDTH*1.5);
+    Variable v_f2_1525_real("f2_1525_real",f2_1525_amp, 0.001, -100.0, +100.0);
+    Variable v_f2_1525_img("f2_1525_img",f2_1525_img, 0.001, -100.0, +100.0);
 
     //f0(980)
     Variable v_f0_980_Mass("f0_980_MASS",f0_980_MASS,3.0,f0_980_MASS*0.5,f0_980_MASS*1.5);
     Variable v_f0_980_GPP("f0_980_GPP",f0_980_GPP,0.01,f0_980_GPP*0,f0_980_GPP*20.0);
     Variable v_f0_980_GKK("f0_980_GKK",f0_980_GKK,0.02,f0_980_GKK*0,f0_980_GKK*3.0);
-    Variable v_f0_980_amp_real("f0_980_amp_real",f0_980_amp, 0.001, -100.0, +100.0);
-    Variable v_f0_980_amp_img("f0_980_amp_img",f0_980_img, 0.001, -100.0, +100.0);
+    Variable v_f0_980_real("f0_980_real",f0_980_amp, 0.001, -100.0, +100.0);
+    Variable v_f0_980_img("f0_980_img",f0_980_img, 0.001, -100.0, +100.0);
 
-    v_f0_980_amp_real.setFixed(true);
-    v_f0_980_amp_img.setFixed(true);
+    v_f0_980_real.setFixed(true);
+    v_f0_980_img.setFixed(true);
 
     
     //f0(1500)
     Variable v_f0_1500_Mass("f0_1500_MASS",f0_1500_MASS,0.006,f0_1500_MASS*0.1,f0_1500_MASS*1.5);
     Variable v_f0_1500_Width("f0_1500_Width",f0_1500_WIDTH,0.007,0.1,1.);
-    Variable v_f0_1500_amp_real("f0_amp_1500_real",f0_1500_amp, 0.001, -100.0, +100.0);
-    Variable v_f0_1500_amp_img("f0_1500_amp_img",f0_1500_img, 0.001, -100.0, +100.0);
+    Variable v_f0_1500_real("f0_1500_real",f0_1500_amp, 0.001, -100.0, +100.0);
+    Variable v_f0_1500_img("f0_1500_img",f0_1500_img, 0.001, -100.0, +100.0);
+
+
+    //f0(X)
+    Variable v_f0_X_Mass("f0_X_MASS",f0_X_MASS,0.006,f0_X_MASS*0.1,f0_X_MASS*1.5);
+    Variable v_f0_X_Width("f0_X_Width",f0_X_WIDTH,0.007,0.1,1.);
+    Variable v_f0_X_real("f0_X_real",f0_X_amp, 0.001, -100.0, +100.0);
+    Variable v_f0_X_img("f0_X_img",f0_X_img, 0.001, -100.0, +100.0);
 
 
     //NR
-    Variable nonr_amp_real("nonr_amp_real", 1.0, 0.001, -200.0, +200.0);
-    Variable nonr_amp_imag("nonr_amp_imag", 1.0, 0.001, -200.0, +200.0);
+    Variable nonr_real("nonr_real", 1.0, 0.001, -200.0, +200.0);
+    Variable nonr_imag("nonr_imag", 1.0, 0.001, -200.0, +200.0);
 
     Variable be_real("be_real", 1.0, 0.001, -200.0, +200.0);
     Variable be_imag("be_imag", 0., 0.001, -200.0, +200.0);
@@ -388,32 +387,39 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     v_omega_Mass.setFixed(true);
     v_omega_Width.setFixed(true);
    
+    v_f2_1270_Mass.setFixed(true);
+    v_f2_1270_Width.setFixed(true);
 
-    v_f2_Mass.setFixed(true);
-    v_f2_Width.setFixed(true);
-
+    v_f2_1525_Mass.setFixed(true);
+    v_f2_1525_Width.setFixed(true);
 
     v_f0_980_Mass.setFixed(true);
     v_f0_980_GKK.setFixed(true);
     v_f0_980_GPP.setFixed(true);
 
-
     v_f0_1500_Mass.setFixed(true);
     v_f0_1500_Width.setFixed(true);
 
-     be_coef.setFixed(true);
+    v_f0_X_Mass.setFixed(true);
+    v_f0_X_Width.setFixed(true);
+
+    be_coef.setFixed(true);
     
    //setting resonances
    
-    ResonancePdf* omega_12 = new Resonances::GS("omega",v_omega_amp_real,v_omega_amp_img,v_omega_Mass,v_omega_Width,1,PAIR_12,true);
+    ResonancePdf* omega_12 = new Resonances::GS("omega",v_omega_real,v_omega_img,v_omega_Mass,v_omega_Width,1,PAIR_12,true);
     
-    ResonancePdf* f2_12 = new Resonances::RBW("f2",v_f2_amp_real,v_f2_amp_img,v_f2_Mass,v_f2_Width,2,PAIR_12,true);
-  
-    ResonancePdf* f0_980_12 = new Resonances::FLATTE("f0_980",v_f0_980_amp_real,v_f0_980_amp_img,v_f0_980_Mass,v_f0_980_GPP,v_f0_980_GKK,PAIR_12,true);
+    ResonancePdf* f2_1270_12 = new Resonances::RBW("f2",v_f2_1270_real,v_f2_1270_img,v_f2_1270_Mass,v_f2_1270_Width,2,PAIR_12,true);
 
-    ResonancePdf* f0_1500_12 = new Resonances::RBW("f0_1500_12",v_f0_1500_amp_real,v_f0_1500_amp_img,v_f0_1500_Mass,v_f0_1500_Width,(unsigned int)0,PAIR_12,true);  
+    ResonancePdf* f2_1525_12 = new Resonances::RBW("f2",v_f2_1525_real,v_f2_1525_img,v_f2_1525_Mass,v_f2_1525_Width,2,PAIR_12,true);
+  
+    ResonancePdf* f0_980_12 = new Resonances::FLATTE("f0_980",v_f0_980_real,v_f0_980_img,v_f0_980_Mass,v_f0_980_GPP,v_f0_980_GKK,PAIR_12,true);
+
+    ResonancePdf* f0_1500_12 = new Resonances::RBW("f0_1500_12",v_f0_1500_real,v_f0_1500_img,v_f0_1500_Mass,v_f0_1500_Width,(unsigned int)0,PAIR_12,true);  
+
+    ResonancePdf* f0_X_12 = new Resonances::RBW("f0_X_12",v_f0_X_real,v_f0_X_img,v_f0_X_Mass,v_f0_X_Width,(unsigned int)0,PAIR_12,true);  
      
-    ResonancePdf *nonr = new Resonances::NonRes("nonr", nonr_amp_real, nonr_amp_imag);
+    ResonancePdf *nonr = new Resonances::NonRes("nonr", nonr_real, nonr_imag);
 
     ResonancePdf *be   = new Resonances::BoseEinstein("be",be_real,be_imag,be_coef);
 
@@ -422,17 +428,15 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
 
     //Pushing Resonances 
 
-    //dtoppp.resonances.push_back(rho_12);
-    //dtoppp.resonances.push_back(rho_1450_12);
     dtoppp.resonances.push_back(omega_12);
-    dtoppp.resonances.push_back(f2_12);
-    //dtoppp.resonances.push_back(sigma_12);
-   //dtoppp.resonances.push_back(f0_980_12);
-    //dtoppp.resonances.push_back(f0_1370_12);
-   //dtoppp.resonances.push_back(f0_1500_12);
+    dtoppp.resonances.push_back(f2_1270_12);
+    dtoppp.resonances.push_back(f2_1525_12);
+    dtoppp.resonances.push_back(f0_980_12);
+    dtoppp.resonances.push_back(f0_1500_12);
+    dtoppp.resonances.push_back(f0_X_12);
     //dtoppp.resonances.push_back(nonr);
     //dtoppp.resonances.push_back(be);
-    dtoppp.resonances.push_back(swave_12);
+    //dtoppp.resonances.push_back(swave_12);
 
     if(!eff) {
         // By default create a constant efficiency.
