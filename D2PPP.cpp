@@ -105,6 +105,8 @@ const string bkghisto_file = "files/bkghisto.root";
 fptype cpuGetM23(fptype massPZ, fptype massPM) { return (massSum.getValue() - massPZ - massPM); }
 
 DalitzPlotPdf *makesignalpdf(GooPdf *eff = 0);
+void saveParameters(std::string file, const std::vector<ROOT::Minuit2::MinuitParameter> &param,   bool isValid,  double fcn,  std::vector<std::vector<fptype>> ff );
+void saveParameters(std::string file, const std::vector<ROOT::Minuit2::MinuitParameter> &param);
 void getdata(std::string name);
 
 TH2F *weightHistogram    = nullptr;
@@ -724,7 +726,7 @@ void runMakeToyDalitzPdfPlots(std::string name){
 
 }
 
-void saveParameters(const std::vector<ROOT::Minuit2::MinuitParameter> &param, std::string file){
+void saveParameters(std::string file, const std::vector<ROOT::Minuit2::MinuitParameter> &param){
 
    // std::cout << param[0].GetName() << std::endl;
 
@@ -735,13 +737,87 @@ void saveParameters(const std::vector<ROOT::Minuit2::MinuitParameter> &param, st
             wr << param[i].GetName() <<'\t'<< param[i].Value()<< '\t' << param[i].Error() << endl;
         }
     }
-    
+
+
     wr.close();
 
 }
 
 
+void saveParameters(std::string file, const std::vector<ROOT::Minuit2::MinuitParameter> &param,   bool isValid, double fcn, std::vector<std::vector<fptype>> ff ){
 
+    // std::cout << param[0].GetName() << std::endl;
+
+    size_t n_res = signaldalitz->getDecayInfo().resonances.size();
+    
+    ofstream wr(file.c_str());
+
+    for(int i = 0; i < param.size(); i++){
+        if( !(param[i].IsConst() || param[i].IsFixed()) ){
+            wr << param[i].GetName() <<'\t'<< param[i].Value()<< '\t' << param[i].Error() << endl;
+        }
+    }
+
+    for(int i = 0; i < n_res; i++){
+        wr << ("FF_"+ to_string(i) ).c_str() << '\t' << ff[i][i]  << '\t' << 0 << endl;
+    }
+
+    wr << "FCN" << '\t' << fcn << '\t' << 0.0 << '\t' << 0.0 << endl;
+    wr << "Status" << '\t' << isValid << '\t' << 0.0 << '\t' << 0.0 << endl;
+    
+    
+   
+
+    wr.close();
+
+}
+
+
+/*void saveParameters(std::string file, const std::vector<ROOT::Minuit2::MinuitParameter> &param,   bool isValid, double fcn, std::vector<std::vector<fptype>> ff ){
+
+    std::vector<fptype> v;
+    std::vector<string> v_name;
+    size_t n_res = signaldalitz->getDecayInfo().resonances.size();
+
+    for(size_t i = 0 ; i < param.size() ; i++){
+
+        if(param[i].IsConst() || param[i].IsFixed()){
+
+            continue;
+
+        }else{
+
+            v.push_back(param[i].Value());
+            v.push_back(param[i].Error());
+            v_name.push_back(param[i].GetName());
+
+        }
+
+    }
+
+    for(int i = 0; i < n_res; i++){
+        v.push_back(ff[i][i]);
+        v_name.push_back( ("FF_"+to_string(i)).c_str() );
+    }
+
+
+    v_name.push_back("FCN");
+    v.push_back(fcn);
+    v.push_back(isValid);
+
+    std::ofstream output_file("fitResults.txt",std::ofstream::out | std::ofstream::app);
+    std::ostream_iterator<std::string> output_iterator(output_file, "\t");
+    std::transform(v.begin(), v.end(), output_iterator,
+                   [](const fptype &v){return std::to_string(v);});
+
+    
+     output_file << endl;
+    }
+   
+
+
+
+*/
 
 double runtoyfit(std::string name, int sample_number,int bins){
 
@@ -782,11 +858,10 @@ double runtoyfit(std::string name, int sample_number,int bins){
     overallPdf->setData(Data);
     signaldalitz->setDataSize(Data->getNumEvents());
 
-    //ROOT::Math::MinimizerOptions opt;
-    //opt.SetTolerance(0.01);
+    
     FitManagerMinuit2 fitter(overallPdf);
     fitter.setVerbosity(2);
-    //fitter.setPrint(0);
+    
 
     std::string command = "mkdir -p Fit";
     if(system(command.c_str()) != 0)
@@ -796,22 +871,26 @@ double runtoyfit(std::string name, int sample_number,int bins){
     auto params = fitter.getParams()->Parameters();
 
     string input_name = fmt::format("Fit/fit_parameters_inicial.txt");
-    
-    saveParameters(params, input_name); 
+
+   
+    saveParameters(input_name,params);
 
     
     auto func_min = fitter.fit();
+    auto ff = signaldalitz->fit_fractions();
+    //PrintFF(ff);
 
     params.clear();
     params  = fitter.getParams()->Parameters();
 
     string output_name = fmt::format("Fit/fit_parameters_{0}.txt",sample_number);
     
-    saveParameters(params, output_name);
+    saveParameters(output_name , params ,func_min.IsValid(), func_min.Fval() , ff );
 
 
 
-    return overallPdf->normalize();
+
+    return 0;
 
     }
 
@@ -841,108 +920,13 @@ void normStudy(std::string name, int sample_number,int nbins_i,int nbins_f){
 
 
 
-/*
-void genfitplot(const int nsamples,const int nvar){
-
-    ifstream r_i("Fit/fit_parameters_inicial.txt");
-
-    double val_i,error_i;
-    std::string foo_i;
-    double vec_val_i[nvar];
-    double vec_error_i[nvar];
-
-    size_t l =0;
-    while(r_i >> foo_i >> val_i >> error_i){
-
-        vec_val_i[l] = val_i;
-        vec_error_i[l] = error_i;
-        l++;
-    }
-
-    r_i.close();
-
-    std::string name;
-    double val;
-    double error;
-    double vec_val[nvar][nsamples];
-    double vec_error[nvar][nsamples];
-    std::string vec_name[nvar];
-
-    size_t val_index, var_index = 0;
-
-    for(size_t i = 0; i < nsamples; i++){
-       
-        name = fmt::format("Fit/fit_parameters_{0}.txt",i);
-        ifstream rd(name.c_str());
-    
-        while(rd >> name >> val >> error){
-
-            vec_val[var_index][val_index] = val;
-            vec_error[var_index][val_index] = error;
-            vec_name[var_index] = name;
-            var_index++;
-   
-         }
-
-        rd.close();
-        val_index++;
-        var_index = 0;
-
-    }
-
-    TH1F *hist_var[nvar];
-    TH1F *hist_error[nvar];
-    double graph_values[nvar];
-    double graph_errors[nvar];
-    double index[nvar];
-    double index_error[nvar] ;
-
-    TFile f("histo.root","RECREATE");
-
-    for(size_t i = 0; i < nvar; i++){
-
-        index[i] = i;
-        std::sort(vec_val[i], vec_val[i] + nsamples);
-        std::sort(vec_error[i], vec_error[i] + nsamples);
-
-        hist_var[i] = new TH1F( (vec_name[i] + "_value").c_str(),(vec_name[i] + "_value").c_str(),1,
-                               vec_val[i][0],vec_val[i][nsamples]);
-        hist_error[i] = new TH1F( (vec_name[i] + "_error").c_str(),(vec_name[i] + "_error").c_str(),1,
-                               vec_error[i][0],vec_error[i][nsamples]);
-
-        for(size_t j=0; j < nsamples; j++){
-            printf("(%d,%d) = [%lg,%lg] \n",i,j,vec_val[i][j],vec_error[i][j]);
-            hist_var[i]->Fill(vec_val[i][j]);
-            hist_error[i]->Fill(vec_error[i][j]);
-        }
-
-        hist_var[i]->Write();
-        hist_error[i]->Write();
-       
-        graph_values[i] = hist_var[i]->GetMean();
-        graph_errors[i] = hist_error[i]->GetMean();
-    }
-
-    f.Close();
-    
-    TGraphErrors *graph_result = new TGraphErrors(nvar,index,graph_values,index_error,graph_errors);
-    TGraphErrors *graph_initial = new TGraphErrors(nvar,index,vec_val_i,index_error,vec_error_i);
-    TCanvas foo;
-    graph_result->SetMarkerStyle(kCircle);
-    graph_result->SetMarkerColor(kRed);
-    graph_result->Draw("AP");
-    graph_initial->SetMarkerStyle(20);
-    graph_result->SetMarkerColor(kBlue);
-    graph_initial->Draw("Psame");
-
-    foo.SaveAs("test.png");
-
-}*/
-
-
 void genfitplot(int nsamples,int nvar){
 
     double vec_inicial[nvar];
+
+    if(signaldalitz == nullptr){ 
+    	signaldalitz = makesignalpdf(0);
+    }
     
    //getting inicial parameters
 
@@ -950,6 +934,8 @@ void genfitplot(int nsamples,int nvar){
     int index = 0;
     double inicial_var = 0;
     double inicial_error =0;
+    
+    size_t n_res = signaldalitz->getDecayInfo().resonances.size();
     std::string inicial_name;
     ifstream r_inicial("Fit/fit_parameters_inicial.txt");
 	
@@ -958,9 +944,8 @@ void genfitplot(int nsamples,int nvar){
 
     double val[nvar];
     double val_error[nvar];
-    //std::fill(val,val+nvar,0);
-    //std::fill(val_error,val_error+nvar,0);
-  
+    double ff_val[n_res];
+      
     while(r_inicial >> inicial_name >> inicial_var >> inicial_error){
             vec_inicial[index] = inicial_var;
 	    t->Branch(inicial_name.c_str(),val+index);
@@ -968,8 +953,20 @@ void genfitplot(int nsamples,int nvar){
             index++;
     }
 
+    for(int i=0; i < n_res ; i++){
+        t->Branch( ("FF_"+to_string(i)).c_str(), ff_val + i);
+    }
+
+    
+
+    double FCN, Status;
+    t->Branch("FCN",&FCN);
+    t->Branch("Status",&Status);
+    
+
     //getting fit parameters
    std::string name;
+   std::string line;
  
        for(int i = 0; i < nsamples; i++){
         
@@ -980,23 +977,50 @@ void genfitplot(int nsamples,int nvar){
 
                 int index_fit = 0;
                 double fit_var = 0;
-		double fit_error=0;
-		std::string fit_name;
+		        double fit_error=0;
+		        std::string fit_name;
+                int count = 0;
+                int index_ff = 0;
 
-                while(r_fit >> fit_name >> fit_var >> fit_error){
+                while(std::getline(r_fit,line)){
 
-                    val[index_fit] = fit_var;
-		    val_error[index_fit] = fit_error;
+                    std::stringstream ss(line);
 
-		    cout << val[index_fit] << " " << val_error[index_fit] << endl;	     
-		    index_fit++;
+                    if(ss >> name >> fit_var >> fit_error){
+
+                        if(count<nvar){
+                            val[index_fit] = fit_var;
+		                    val_error[index_fit] = fit_error; 
+                            index_fit++;  
+                        }
+
+                         if( (count >= nvar)&&(count < (nvar+n_res)) ){
+                            ff_val[index_ff] = fit_var;
+                            index_ff++;
+                        }
+
+                        if(count==(nvar+n_res)){
+                            FCN = fit_var;
+                            //cout << count << endl;
+                        
+                        }
+                    
+                        if(count==(nvar+n_res+1)){
+                            Status = fit_var;
+                        }
+
+                        cout << count << endl;
+
+                        count++;
+
+                    }
+                    
                 }
 
-		 t->Fill();
-
-            
+		        t->Fill();
 
                 r_fit.close();
+
             }else{
                 printf("Error \n");
             }
