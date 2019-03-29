@@ -19,6 +19,8 @@ double m12_max = s12_max;
 
 //int slices = 60;
 
+
+
 TComplex plainBW(double *x, double *par) {
 
     double resmass  = par[2];
@@ -43,7 +45,7 @@ TComplex flatte(double *x, double *par) {
     
     double resmass            = par[2];
     double g1                 = par[3];
-    double g2                 = par[4]*g1;
+    double g2                 = par[4];
 
     double pipmass = 0.13957018;
     double pi0mass = 0.1349766;
@@ -106,7 +108,7 @@ void PWACoefs(int slices,double val){
 
     ofstream wr("files/PWACOEFS.txt");
 
-    double par[9] = {.3,.8,1.504,.109,1.0,.0,.965,.165,4.21}; 
+    double par[13] = {.3,.8,1.504,.109,1.0,.0,.965,0.165,0.695,0.5,0.5,1.430,0.320}; 
 
     int temp = 0;
     int j = 1;
@@ -120,7 +122,7 @@ void PWACoefs(int slices,double val){
 	
 
 
-		TComplex v = (plainBW(&s,par) +flatte(&s,&par[4]));
+		TComplex v = (plainBW(&s,par) +flatte(&s,&par[4]) + plainBW(&s,&par[9]));
     		bin_amp_real = v.Re();
     		bin_amp_img = v.Im();
 
