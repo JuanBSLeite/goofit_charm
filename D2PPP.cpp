@@ -103,7 +103,6 @@ const string bkghisto_file = "files/bkghisto.root";
 
 //functions
 fptype cpuGetM23(fptype massPZ, fptype massPM) { return (massSum.getValue() - massPZ - massPM); }
-
 DalitzPlotPdf *makesignalpdf(GooPdf *eff = 0);
 void saveParameters(std::string file, const std::vector<ROOT::Minuit2::MinuitParameter> &param,   bool isValid,  double fcn,  std::vector<std::vector<fptype>> ff );
 void saveParameters(std::string file, const std::vector<ROOT::Minuit2::MinuitParameter> &param);
@@ -540,191 +539,6 @@ void runtoygen(std::string name, size_t events){
     }
 }
 
-void PrintFF(std::vector<std::vector<fptype>> ff){
-
-    size_t nEntries = signaldalitz->getCachedWave(0).size();
-    size_t n_res = signaldalitz->getDecayInfo().resonances.size();
-    fptype sum = 0;
-
-    std::cout << "nEntries= " << nEntries << '\n';
-    for(size_t i = 0; i < n_res ; i++){
-
-        for(size_t j = 0; j< n_res ; j++){
-            std::cout << "FF[" << i << "," << j <<"]= " << ff[i][j] << std::endl;
-
-        }
-
-        sum+=ff[i][i];
-    }
-
-    std::cout << "Sum[i,i]= " << sum << std::endl;
-}
-
-
-void drawFitPlotsWithPulls(TH1 *hd, TH1 *ht, string plotdir) {
-    const char *hname = hd->GetName();
-    char obsname[10];
-    for(int i = 0;; i++) {
-        if(hname[i] == '_')
-            obsname[i] = '\0';
-        else
-            obsname[i] = hname[i];
-        if(obsname[i] == '\0')
-            break;
-    }
-    ht->Scale(hd->Integral() / ht->Integral()*5);
-    ht->SetLineColor(kRed);
-    ht->SetLineWidth(3);
-    ht->SetMarkerStyle(0);
-
-    hd->SetMarkerColor(kBlack);
-    hd->Rebin(5);
-
-
-    TCanvas foo;
-
-    hd->Draw("E");
-    ht->Draw("HIST C same");
-
-
-    foo.SaveAs(TString::Format("plots/%s_fit.png",obsname));
-
-
-}
-
-
-void makeToyDalitzPdfPlots(GooPdf *overallSignal, string plotdir = "plots") {
-    TH1F s12_dat_hist("s12_dat_hist", "", s12.getNumBins(), s12.getLowerLimit(), s12.getUpperLimit());
-    s12_dat_hist.GetXaxis()->SetTitle("m^{2}(K^{-} K^{+}) [GeV]");
-    s12_dat_hist.GetYaxis()->SetTitle(TString::Format("Events / %.1f MeV", 1e3 * s12_dat_hist.GetBinWidth(1)));
-
-    TH1F s12_pdf_hist("s12_pdf_hist", "", s12.getNumBins(), s12.getLowerLimit(), s12.getUpperLimit());
-
-    TH1F s13_dat_hist("s13_dat_hist", "", s13.getNumBins(), s13.getLowerLimit(), s13.getUpperLimit());
-    s13_dat_hist.GetXaxis()->SetTitle("m^{2}(K^{-} K^{+}) [GeV]");
-    s13_dat_hist.GetYaxis()->SetTitle(TString::Format("Events / %.1f MeV", 1e3 * s13_dat_hist.GetBinWidth(1)));
-
-    TH1F s13_pdf_hist("s13_pdf_hist", "", s13.getNumBins(), s13.getLowerLimit(), s13.getUpperLimit());
-
-    TH1F s23_dat_hist("s23_dat_hist", "", s13.getNumBins(), s13.getLowerLimit(), s13.getUpperLimit());
-    s23_dat_hist.GetXaxis()->SetTitle("m^{2}(#pi^{+} #pi^{-}) [GeV]");
-    s23_dat_hist.GetYaxis()->SetTitle(TString::Format("Events / %.1f MeV", 1e3 * s13_dat_hist.GetBinWidth(1)));
-
-    TH1F s23_pdf_hist("s23_pdf_hist", "", s13.getNumBins(), s13.getLowerLimit(), s13.getUpperLimit());
-
-    double totalPdf = 0;
-    double totalDat = 0;
-    TH2F dalitzpp0_dat_hist("dalitzpp0_dat_hist",
-                            "",
-                            s12.getNumBins(),
-                            s12.getLowerLimit(),
-                            s12.getUpperLimit(),
-                            s13.getNumBins(),
-                            s13.getLowerLimit(),
-                            s13.getUpperLimit());
-    dalitzpp0_dat_hist.SetStats(false);
-    dalitzpp0_dat_hist.GetXaxis()->SetTitle("m^{2}(K^{-} K^{+}) [GeV]");
-    dalitzpp0_dat_hist.GetYaxis()->SetTitle("m^{2}(K^{-} K^{+}) [GeV^{2}]");
-    TH2F dalitzpp0_pdf_hist("dalitzpp0_pdf_hist",
-                            "",
-                            s12.getNumBins(),
-                            s12.getLowerLimit(),
-                            s12.getUpperLimit(),
-                            s13.getNumBins(),
-                            s13.getLowerLimit(),
-                            s13.getUpperLimit());
-
-    dalitzpp0_pdf_hist.GetXaxis()->SetTitle("m^{2}(K^{-} K^{+}) [GeV^{2}]");
-    dalitzpp0_pdf_hist.GetYaxis()->SetTitle("m^{2}(K^{-} K^{+}) [GeV^{2}]");
-    dalitzpp0_pdf_hist.SetStats(false);
-    std::vector<Observable> vars;
-    vars.push_back(s12);
-    vars.push_back(s13);
-    vars.push_back(eventNumber);
-    UnbinnedDataSet currData(vars);
-    int evtCounter = 0;
-
-    for(int i = 0; i < s12.getNumBins(); ++i) {
-        s12.setValue(s12.getLowerLimit() + (s12.getUpperLimit() - s12.getLowerLimit()) * (i + 0.5) / s12.getNumBins());
-        for(int j = 0; j < s13.getNumBins(); ++j) {
-            s13.setValue(s13.getLowerLimit()
-                         + (s13.getUpperLimit() - s13.getLowerLimit()) * (j + 0.5) / s13.getNumBins());
-            if(!inDalitz(s12.getValue(), s13.getValue(), D_MASS, d1_MASS, d2_MASS, d3_MASS)){
-                continue;}
-            eventNumber.setValue(evtCounter);
-            evtCounter++;
-            currData.addEvent();
-        }
-    }
-    overallSignal->setData(&currData);
-    signaldalitz->setDataSize(currData.getNumEvents());
-    std::vector<std::vector<double>> pdfValues = overallSignal->getCompProbsAtDataPoints();
-    for(unsigned int j = 0; j < pdfValues[0].size(); ++j) {
-        double currs12 = currData.getValue(s12, j);
-        double currs13 = currData.getValue(s13, j);
-
-        dalitzpp0_pdf_hist.Fill(currs12, currs13, pdfValues[0][j]);
-        s12_pdf_hist.Fill(currs12, pdfValues[0][j]);
-        s13_pdf_hist.Fill(currs13, pdfValues[0][j]);
-        s23_pdf_hist.Fill(cpuGetM23(currs12, currs13), pdfValues[0][j]);
-        totalPdf += pdfValues[0][j];
-    }
-
-    TCanvas foo;
-    foo.SetLogz(false);
-    dalitzpp0_pdf_hist.Draw("colz");
-
-    foo.SaveAs("plots/dalitzpp0_pdf.png");
-
-    for(unsigned int evt = 0; evt < Data->getNumEvents(); ++evt) {
-        double data_s12 = Data->getValue(s12, evt);
-        s12_dat_hist.Fill(data_s12);
-        double data_s13 = Data->getValue(s13, evt);
-        s13_dat_hist.Fill(data_s13);
-        dalitzpp0_dat_hist.Fill(data_s12, data_s13);
-        s23_dat_hist.Fill(cpuGetM23(data_s12, data_s13));
-        totalDat++;
-    }
-    dalitzpp0_dat_hist.Draw("colz");
-    foo.SaveAs("plots/dalitzpp0_dat.png");
-
-    drawFitPlotsWithPulls(&s12_dat_hist, &s12_pdf_hist, plotdir);
-    drawFitPlotsWithPulls(&s13_dat_hist, &s13_pdf_hist, plotdir);
-    drawFitPlotsWithPulls(&s23_dat_hist, &s23_pdf_hist, plotdir);
-}
-
-void runMakeToyDalitzPdfPlots(std::string name){
-
-    s12.setNumBins(1500);
-    s13.setNumBins(1500);
-
-    getdata(name);
-
-    signaldalitz = makesignalpdf(0);
-    
-    if(bkgOn){
-
-        bkgdalitz = makeBackgroundPdf();
-        bkgdalitz->setParameterConstantness(true);
-
-    }
-    Variable constant("constant",1);
-    std::vector<Variable> weights;
-    weights.push_back(constant);
-    
-    comps.clear();
-    comps.push_back(signaldalitz);
-    if(bkgOn){
-    comps.push_back(bkgdalitz);
-    }
-
-    AddPdf* overallPdf = new AddPdf("overallPdf",weights,comps);
-    overallPdf->setData(Data);
-    signaldalitz->setDataSize(Data->getNumEvents());
-
-    makeToyDalitzPdfPlots(overallPdf);
-
-}
 
 void saveParameters(std::string file, const std::vector<ROOT::Minuit2::MinuitParameter> &param){
 
@@ -772,53 +586,6 @@ void saveParameters(std::string file, const std::vector<ROOT::Minuit2::MinuitPar
 
 }
 
-
-/*void saveParameters(std::string file, const std::vector<ROOT::Minuit2::MinuitParameter> &param,   bool isValid, double fcn, std::vector<std::vector<fptype>> ff ){
-
-    std::vector<fptype> v;
-    std::vector<string> v_name;
-    size_t n_res = signaldalitz->getDecayInfo().resonances.size();
-
-    for(size_t i = 0 ; i < param.size() ; i++){
-
-        if(param[i].IsConst() || param[i].IsFixed()){
-
-            continue;
-
-        }else{
-
-            v.push_back(param[i].Value());
-            v.push_back(param[i].Error());
-            v_name.push_back(param[i].GetName());
-
-        }
-
-    }
-
-    for(int i = 0; i < n_res; i++){
-        v.push_back(ff[i][i]);
-        v_name.push_back( ("FF_"+to_string(i)).c_str() );
-    }
-
-
-    v_name.push_back("FCN");
-    v.push_back(fcn);
-    v.push_back(isValid);
-
-    std::ofstream output_file("fitResults.txt",std::ofstream::out | std::ofstream::app);
-    std::ostream_iterator<std::string> output_iterator(output_file, "\t");
-    std::transform(v.begin(), v.end(), output_iterator,
-                   [](const fptype &v){return std::to_string(v);});
-
-    
-     output_file << endl;
-    }
-   
-
-
-
-*/
-
 double runtoyfit(std::string name, int sample_number,int bins){
 
     s12.setNumBins(bins);
@@ -860,7 +627,7 @@ double runtoyfit(std::string name, int sample_number,int bins){
 
     
     FitManagerMinuit2 fitter(overallPdf);
-    fitter.setVerbosity(2);
+    fitter.setVerbosity(0);
     
 
     std::string command = "mkdir -p Fit";
@@ -1052,7 +819,7 @@ int main(int argc, char **argv){
     auto toyfit = app.add_subcommand("fit","fit toy data/toyMC");
     toyfit->add_option("-b,--bins",nbins,"The number of bins for normalization");
 
-    auto plot = app.add_subcommand("plot","plot signal");
+  
 
     int ns = 10;
     int nv = 10;
@@ -1096,11 +863,6 @@ int main(int argc, char **argv){
         runtoyfit(name,sample_number,nbins);
     }
 
-    
-    if(*plot){
-        CLI::AutoTimer timer("Plot model and data");
-        runMakeToyDalitzPdfPlots("MC/MC_Toy_0.txt");
-    }
 	
      if(*gfplot){
         CLI::AutoTimer timer("plot genfit result");
