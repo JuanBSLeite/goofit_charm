@@ -108,8 +108,8 @@ void PWACoefs(int slices,double val){
 
     ofstream wr("files/PWACOEFS.txt");
 
-    double par[13] = {.3,.8,1.504,.109,1.0,.0,.965,0.165,0.695,0.5,0.5,1.430,0.320}; 
-
+    //double par[5] = {/*.3,.8,1.504,.109,*/1.0,.0,.965,0.165,0.695/*,0.5,0.5,1.430,0.320,0.3,0.8,1.400,.3*/}; 
+    double par[5] = {1.0,.0,.965,0.165,0.695};
     int temp = 0;
     int j = 1;
 
@@ -122,7 +122,7 @@ void PWACoefs(int slices,double val){
 	
 
 
-		TComplex v = (plainBW(&s,par) +flatte(&s,&par[4]) + plainBW(&s,&par[9]));
+		TComplex v = (/*plainBW(&s,par) +*/flatte(&s,par)/* + plainBW(&s,&par[9]) + plainBW(&s,&par[13])*/);
     		bin_amp_real = v.Re();
     		bin_amp_img = v.Im();
 

@@ -76,7 +76,7 @@ bool effOn      = false;
 bool bdt = false;
 
 const double NevG = 1e7; 
-const int bins = 3000;
+const int bins = 500;
 
 fptype s12_min = POW2(d1_MASS  + d2_MASS);
 fptype s12_max = POW2(D_MASS   - d2_MASS);
@@ -189,11 +189,11 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
 
         HH_bin_limits.push_back(e1);
 
-        emag = e2;
-        ephs = e3;
+        emag = e2;//sqrt(e2*e2+e3*e3);
+        ephs = e3;//TMath::ATan2(e3,e2);
 
-        Variable va(fmt::format("pwa_coef_{}_real", i), emag,0.001,-100.0,+100.0);
-        Variable vp(fmt::format("pwa_coef_{}_img", i), ephs,0.001,-100.0,+100.0);
+        Variable va(fmt::format("pwa_coef_{}_real", i), emag, .000001, 0,0);
+        Variable vp(fmt::format("pwa_coef_{}_img", i), ephs, .000001, 0,0);
 
         pwa_coefs_amp.push_back(va);
         pwa_coefs_phs.push_back(vp);
@@ -201,8 +201,8 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
 
     }
 
-    Variable swave_amp_real("swave_amp_real", 1.0,-100.0,+100.0);
-    Variable swave_amp_imag("swave_amp_imag", 0.0,-100.0,+100.0);
+    Variable swave_amp_real("swave_amp_real", 1.0,0.001,0,0);
+    Variable swave_amp_imag("swave_amp_imag", 0.0,0.001,0,0);
 
     if(fixAmp) {
         swave_amp_real.setValue(1.);
@@ -229,7 +229,7 @@ GooPdf* makeEfficiencyPdf() {
     effHistogram->Scale(1./effHistogram->Integral());
     cout << "Efficiency integral = " << effHistogram->Integral() << endl;
 
-    TH1F *effWeight = new TH1F("effWeight","",100,0.,1.);
+   // TH1F *effWeight = new TH1F("effWeight","",100,0.,1.);
 
     TRandom3 donram(50);
     for(int i = 0; i < NevG; i++) {
@@ -505,13 +505,13 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     dtoppp.resonances.push_back(omega_12);
     dtoppp.resonances.push_back(f2_1270_12);
     dtoppp.resonances.push_back(f2_1525_12);
-    dtoppp.resonances.push_back(f0_980_12);
-    dtoppp.resonances.push_back(f0_1370_12);
-    dtoppp.resonances.push_back(f0_1500_12);
-    dtoppp.resonances.push_back(f0_X_12);
-    dtoppp.resonances.push_back(nonr);
+    //dtoppp.resonances.push_back(f0_980_12);
+    //dtoppp.resonances.push_back(f0_1370_12);
+    //dtoppp.resonances.push_back(f0_1500_12);
+    //dtoppp.resonances.push_back(f0_X_12);
+    //dtoppp.resonances.push_back(nonr);
     //dtoppp.resonances.push_back(be);
-    //dtoppp.resonances.push_back(swave_12);
+    dtoppp.resonances.push_back(swave_12);
 
     if(!eff) {
         // By default create a constant efficiency.
@@ -750,28 +750,31 @@ void runtoyfit(std::string name, int sample_number) {
     auto overallPdf = TotalPdf();
 
     overallPdf.first->setData(Data);
-    overallPdf.second->setDataSize(Data->getNumEvents(),3);
+    overallPdf.second->setDataSize(Data->getNumEvents());
  
     
-    GooFit::FitManagerMinuit2 fitter(overallPdf.first);
-    fitter.setVerbosity(2);
-    fitter.setMaxCalls(4000);
+    GooFit::FitManagerMinuit1 fitter(overallPdf.first);
+    //fitter.setVerbosity(2);
+    //fitter.setMaxCalls(20000);
 
     std::string command = "mkdir -p Fit";
     if(system(command.c_str()) != 0)
         throw GooFit::GeneralError("Making `Fit` directory failed");
 
-    auto params = fitter.getParams()->Parameters();
-    string input_name = fmt::format("Fit/fit_parameters_inicial.txt");
-    saveParameters(input_name,params);
+    //auto params = fitter.getParams()->Parameters();
+    //string input_name = fmt::format("Fit/fit_parameters_inicial.txt");
+    //saveParameters(input_name,params);
  
-    auto func_min = fitter.fit();
-    
+    //auto func_min = fitter.fit();
+    fitter.useHesse(true);
+    //fitter.useMinos(false);
+    fitter.useImprove(true);
+    fitter.fit();
     auto ff = overallPdf.second->fit_fractions();
-    params  = fitter.getParams()->Parameters();
-    string output_name = fmt::format("Fit/fit_parameters_{0}.txt",sample_number);
+    //params  = fitter.getParams()->Parameters();
+    //string output_name = fmt::format("Fit/fit_parameters_{0}.txt",sample_number);
 
-    saveParameters(output_name , params ,func_min.IsValid(), func_min.Fval() , ff );
+    //saveParameters(output_name , params ,func_min.IsValid(), func_min.Fval() , ff );
 
 
     // remove comment for plotting 
