@@ -510,7 +510,7 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     dtoppp.resonances.push_back(f0_1500_12);
     dtoppp.resonances.push_back(f0_X_12);
     dtoppp.resonances.push_back(nonr);
-    dtoppp.resonances.push_back(be);
+    //dtoppp.resonances.push_back(be);
     //dtoppp.resonances.push_back(swave_12);
 
     if(!eff) {
@@ -764,9 +764,9 @@ void runtoyfit(std::string name, int sample_number) {
     auto params = fitter.getParams()->Parameters();
     string input_name = fmt::format("Fit/fit_parameters_inicial.txt");
     saveParameters(input_name,params);
-
+ 
     auto func_min = fitter.fit();
-
+    
     auto ff = overallPdf.second->fit_fractions();
     params  = fitter.getParams()->Parameters();
     string output_name = fmt::format("Fit/fit_parameters_{0}.txt",sample_number);
@@ -775,8 +775,8 @@ void runtoyfit(std::string name, int sample_number) {
 
 
     // remove comment for plotting 
-    //DalitzPlotter dp(overallPdf.first,overallPdf.second);
-    //dp.Plot(D_MASS,d1_MASS,d2_MASS,d3_MASS,"#pi^{-} #pi^{+}","#pi^{-} #pi^{+}","#pi^{-} #pi^{+}","plots",*Data);
+    DalitzPlotter dp(overallPdf.first,overallPdf.second);
+    dp.Plot(D_MASS,d1_MASS,d2_MASS,d3_MASS,"#pi^{-} #pi^{+}","#pi^{-} #pi^{+}","#pi^{-} #pi^{+}","plots",*Data);
 
 }
 
@@ -944,7 +944,7 @@ int main(int argc, char **argv){
 
     if(*plotpdf){
         CLI::AutoTimer timer("plot");
-        plot("D2PPP_toy.txt");
+        plot(name);
     }
 
     if(*gfplot){
