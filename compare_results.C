@@ -10,7 +10,7 @@
 #include <TCanvas.h>
 using namespace std;
 
-void compare_results( int N=40, int  n=0);
+void compare_results( int N=30, int  n=0);
 
 int main(int argc, char** argv){
 

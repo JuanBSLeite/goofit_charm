@@ -76,7 +76,7 @@ bool effOn      = false;
 bool bdt = false;
 
 const double NevG = 1e7; 
-const int bins = 500;
+const int bins = 3000;
 
 fptype s12_min = POW2(d1_MASS  + d2_MASS);
 fptype s12_max = POW2(D_MASS   - d2_MASS);
@@ -113,8 +113,8 @@ const string bkghisto_file = "/mnt/e/Dropbox/ic/D2PPP/juan/ntuples/dados/bkg_spl
 const string effhisto_file = "/mnt/e/Dropbox/ic/D2PPP/juan/ntuples/dados/eff.root";
 
 //Declaring Functions 
-void saveParameters(std::string file, const std::vector<ROOT::Minuit2::MinuitParameter> &param,   bool isValid,  double fcn,  std::vector<std::vector<fptype>> ff );
-void saveParameters(std::string file, const std::vector<ROOT::Minuit2::MinuitParameter> &param);
+void saveParameters(std::string file, const std::vector<Variable> &param,   bool isValid,  double fcn,  std::vector<std::vector<fptype>> ff );
+void saveParameters(std::string file, const std::vector<Variable> &param);
 void runtoyfit(std::string name = "D2PPP_toy.txt", int sample_number = 0);
 
 
@@ -502,16 +502,16 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
 
     //Pushing Resonances 
 
-    dtoppp.resonances.push_back(omega_12);
-    dtoppp.resonances.push_back(f2_1270_12);
-    dtoppp.resonances.push_back(f2_1525_12);
+    //dtoppp.resonances.push_back(omega_12);
+    //dtoppp.resonances.push_back(f2_1270_12);
+    //dtoppp.resonances.push_back(f2_1525_12);
     //dtoppp.resonances.push_back(f0_980_12);
-    //dtoppp.resonances.push_back(f0_1370_12);
+    dtoppp.resonances.push_back(f0_1370_12);
     //dtoppp.resonances.push_back(f0_1500_12);
     //dtoppp.resonances.push_back(f0_X_12);
     //dtoppp.resonances.push_back(nonr);
     //dtoppp.resonances.push_back(be);
-    dtoppp.resonances.push_back(swave_12);
+    //dtoppp.resonances.push_back(swave_12);
 
     if(!eff) {
         // By default create a constant efficiency.
@@ -691,15 +691,15 @@ void runtoygen(std::string name, size_t events){
     }
 }
 
-void saveParameters(std::string file, const std::vector<ROOT::Minuit2::MinuitParameter> &param){
+void saveParameters(std::string file, const std::vector<Variable> &param){
 
    // std::cout << param[0].GetName() << std::endl;
 
     ofstream wr(file.c_str());
 
     for(int i = 0; i < param.size(); i++){
-        if( !(param[i].IsConst() || param[i].IsFixed()) ){
-            wr << param[i].GetName() <<'\t'<< param[i].Value()<< '\t' << param[i].Error() << endl;
+        if( !( param[i].IsFixed()) ){
+            wr << param[i].getName() <<'\t'<< param[i].getValue()<< '\t' << param[i].getError() << endl;
         }
     }
 
@@ -708,7 +708,7 @@ void saveParameters(std::string file, const std::vector<ROOT::Minuit2::MinuitPar
 
 }
 
-void saveParameters(std::string file, const std::vector<ROOT::Minuit2::MinuitParameter> &param,   bool isValid, double fcn, std::vector<std::vector<fptype>> ff ){
+void saveParameters(std::string file, const std::vector<Variable> &param,   bool isValid, double fcn, std::vector<std::vector<fptype>> ff ){
 
     DalitzPlotPdf* signaldalitz = makesignalpdf(0);
     size_t n_res = signaldalitz->getDecayInfo().resonances.size();
@@ -716,8 +716,8 @@ void saveParameters(std::string file, const std::vector<ROOT::Minuit2::MinuitPar
     ofstream wr(file.c_str());
 
     for(int i = 0; i < param.size(); i++){
-        if( !(param[i].IsConst() || param[i].IsFixed()) ){
-            wr << param[i].GetName() <<'\t'<< param[i].Value()<< '\t' << param[i].Error() << endl;
+        if( !(param[i].IsFixed()) ){
+            wr << param[i].getName() <<'\t'<< param[i].getValue()<< '\t' << param[i].getError() << endl;
         }
     }
 
@@ -761,25 +761,30 @@ void runtoyfit(std::string name, int sample_number) {
     if(system(command.c_str()) != 0)
         throw GooFit::GeneralError("Making `Fit` directory failed");
 
-    //auto params = fitter.getParams()->Parameters();
-    //string input_name = fmt::format("Fit/fit_parameters_inicial.txt");
-    //saveParameters(input_name,params);
+    auto params = fitter.getMinuitObject()->getVaraibles();
+    string input_name = fmt::format("Fit/fit_parameters_inicial.txt");
+    saveParameters(input_name,params);
  
-    //auto func_min = fitter.fit();
-    fitter.useHesse(true);
-    //fitter.useMinos(false);
-    fitter.useImprove(true);
+    fitter.getMinuitObject()->fIstrat = 2;
+    fitter.getMinuitObject()->SetErrorDef(0.5);
+    fitter.setMaxCalls(10000);
+    //fitter.useHesse(true);
+    //fitter.useHesseBefore(false);
+    //fitter.useImprove(true);
     fitter.fit();
+    
     auto ff = overallPdf.second->fit_fractions();
-    //params  = fitter.getParams()->Parameters();
-    //string output_name = fmt::format("Fit/fit_parameters_{0}.txt",sample_number);
+    params  =  fitter.getMinuitObject()->getVaraibles();
+    fptype foo, fcn = -1;
+    int foo2, status = -1;
+    fitter.getMinuitObject()->mnstat(fcn, foo,foo,foo2,foo2,status);
+    string output_name = fmt::format("Fit/fit_parameters_{0}.txt",sample_number);
+    saveParameters(output_name , params ,status, fcn , ff );
 
-    //saveParameters(output_name , params ,func_min.IsValid(), func_min.Fval() , ff );
-
-
+//
     // remove comment for plotting 
-    DalitzPlotter dp(overallPdf.first,overallPdf.second);
-    dp.Plot(D_MASS,d1_MASS,d2_MASS,d3_MASS,"#pi^{-} #pi^{+}","#pi^{-} #pi^{+}","#pi^{-} #pi^{+}","plots",*Data);
+  //  DalitzPlotter dp(overallPdf.first,overallPdf.second);
+  //  dp.Plot(D_MASS,d1_MASS,d2_MASS,d3_MASS,"#pi^{-} #pi^{+}","#pi^{-} #pi^{+}","#pi^{-} #pi^{+}","plots",*Data);
 
 }
 
