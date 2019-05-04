@@ -443,10 +443,10 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
 
     //NR
     Variable nonr_real("nonr_real", fixed ? 1 : 1*donram.Uniform(-1.,1.), 0.001, -200.0, +200.0);
-    Variable nonr_imag("nonr_imag", fixed ? 1 : 1*donram.Uniform(-1.,1.), 0.001, -200.0, +200.0);
+    Variable nonr_imag("nonr_imag", fixed ? 0 : 1*donram.Uniform(-1.,1.), 0.001, -200.0, +200.0);
 
     Variable be_real("be_real", fixed ? 1 : 1*donram.Uniform(-1.,1.), 0.001, -200.0, +200.0);
-    Variable be_imag("be_imag", fixed ? 1 : 1*donram.Uniform(-1.,1.), 0.001, -200.0, +200.0);
+    Variable be_imag("be_imag", fixed ? 0 : 1*donram.Uniform(-1.,1.), 0.001, -200.0, +200.0);
     Variable be_coef("be_coef", fixed ? 1.9 : 1.9*donram.Uniform(-1.,1.), 0.001, -200.0, +200.0);
     //Masses and Widths fixed
 
@@ -502,15 +502,15 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
 
     //Pushing Resonances 
 
-    //dtoppp.resonances.push_back(omega_12);
-    //dtoppp.resonances.push_back(f2_1270_12);
-    //dtoppp.resonances.push_back(f2_1525_12);
-    //dtoppp.resonances.push_back(f0_980_12);
+    dtoppp.resonances.push_back(omega_12);
+    dtoppp.resonances.push_back(f2_1270_12);
+    dtoppp.resonances.push_back(f2_1525_12);
+    dtoppp.resonances.push_back(f0_980_12);
     dtoppp.resonances.push_back(f0_1370_12);
-    //dtoppp.resonances.push_back(f0_1500_12);
-    //dtoppp.resonances.push_back(f0_X_12);
-    //dtoppp.resonances.push_back(nonr);
-    //dtoppp.resonances.push_back(be);
+    dtoppp.resonances.push_back(f0_1500_12);
+    dtoppp.resonances.push_back(f0_X_12);
+    dtoppp.resonances.push_back(nonr);
+    dtoppp.resonances.push_back(be);
     //dtoppp.resonances.push_back(swave_12);
 
     if(!eff) {
@@ -754,9 +754,8 @@ void runtoyfit(std::string name, int sample_number) {
  
     
     GooFit::FitManagerMinuit1 fitter(overallPdf.first);
-    //fitter.setVerbosity(2);
-    //fitter.setMaxCalls(20000);
-
+    fitter.setVerbosity(1);
+    
     std::string command = "mkdir -p Fit";
     if(system(command.c_str()) != 0)
         throw GooFit::GeneralError("Making `Fit` directory failed");
@@ -767,7 +766,7 @@ void runtoyfit(std::string name, int sample_number) {
  
     fitter.getMinuitObject()->fIstrat = 2;
     fitter.getMinuitObject()->SetErrorDef(0.5);
-    fitter.setMaxCalls(10000);
+    fitter.setMaxCalls(4000);
     //fitter.useHesse(true);
     //fitter.useHesseBefore(false);
     //fitter.useImprove(true);
