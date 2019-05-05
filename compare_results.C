@@ -10,7 +10,7 @@
 #include <TCanvas.h>
 using namespace std;
 
-void compare_results( int N=50, int  n=0);
+void compare_results( int N=30, int  n=0);
 
 int main(int argc, char** argv){
 
@@ -41,8 +41,8 @@ while(r >> _s >> _pr >> _pi){
 	pi_e[j]=0;
 	foo_e[j]=0;
 	
-	if(j<10)
-		printf("%d = (%lg,%lg,%lg,%lg,%lg) \n",j,s[j],pr[j],pi[j],pr_e[j],pi_e[j]); 
+
+  printf("%d = (%lg,%lg,%lg,%lg,%lg) \n",j,s[j],pr[j],pi[j],pr_e[j],pi_e[j]); 
 
 	 j++;
 }
@@ -64,24 +64,29 @@ double _fpr,_fpi,_fpr_e,_fpi_e;
 string _foo;
 
 j=0;
-int d,f=0;
+int d = 0 ;
+int f= 0;
 printf("Fit Points \n");
 while(fr >> _foo >> _fpr >> _fpr_e ){
         string n_r = "pwa_coef_"+to_string(d)+"_real";
 	string n_i = "pwa_coef_"+to_string(f)+"_img";
 	
-	if(_foo.compare(n_r)==0){
-		fpr[d]=_fpr;
-		fpr_e[d]=_fpr_e;
-		printf("%d = (%lg,%lg) \n",d,_fpr,_fpr_e);
-		d++;
-	}
 
 	if(_foo.compare(n_i)==0){
 		fpi[f]=_fpr;
 		fpi_e[f]=_fpr_e;
-		printf("%d = (%lg,%lg) \n",f,_fpr,_fpr_e);
+		printf("img: %d = (%lg,%lg) \n",f,_fpr,_fpr_e);
 		f++;
+	}
+
+
+
+
+	if(_foo.compare(n_r)==0){
+		fpr[d]=_fpr;
+		fpr_e[d]=_fpr_e;
+		printf("real: %d = (%lg,%lg) \n",d,_fpr,_fpr_e);
+		d++;
 	}
 
 		
@@ -93,8 +98,6 @@ TCanvas c;
 
 TGraphErrors *gr1 = new TGraphErrors(N,s,pr,foo_e,pr_e);
 gr1->SetMarkerStyle(4);
-gr1->SetMinimum(-30);
-gr1->SetMaximum(30);
 
 TGraphErrors *gr2 = new TGraphErrors(N,s,fpr,foo_e,fpr_e);
 gr2->SetLineColor(kRed);
@@ -109,8 +112,6 @@ c.SaveAs(name);
 
 TGraphErrors *gr3 = new TGraphErrors(N,s,pi,foo_e,pi_e);
 gr3->SetMarkerStyle(4);
-gr3->SetMinimum(-30);
-gr3->SetMaximum(30);
 
 TGraphErrors *gr4 = new TGraphErrors(N,s,fpi,foo_e,fpi_e);
 gr4->SetLineColor(kRed);

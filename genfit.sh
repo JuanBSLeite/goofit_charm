@@ -1,14 +1,14 @@
 #!/bin/sh
 START_TIME=$SECONDS
-for i in $(seq 0 1); do
+for i in $(seq 101 500); do
 	./D2PPP -i $i gen -e 100000
 done
 
-for i in $(seq 0 1); do
+for i in $(seq 101 500); do
 	./D2PPP -i $i fit	
 done
 
-#./D2PPP gfplot -n 100 -v 10
+./D2PPP gfplot -n 500 -v 12
 
 ELAPSED_TIME=$(($SECONDS - $START_TIME))
 
