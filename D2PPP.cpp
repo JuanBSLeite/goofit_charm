@@ -503,13 +503,13 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     //Pushing Resonances 
 
     dtoppp.resonances.push_back(omega_12);
-    dtoppp.resonances.push_back(f2_1270_12);
-    dtoppp.resonances.push_back(f2_1525_12);
-    dtoppp.resonances.push_back(f0_980_12);
-    dtoppp.resonances.push_back(f0_1370_12);
-    dtoppp.resonances.push_back(f0_1500_12);
-    dtoppp.resonances.push_back(f0_X_12);
-    dtoppp.resonances.push_back(nonr);
+    //dtoppp.resonances.push_back(f2_1270_12);
+    //dtoppp.resonances.push_back(f2_1525_12);
+    //dtoppp.resonances.push_back(f0_980_12);
+    //dtoppp.resonances.push_back(f0_1370_12);
+    //dtoppp.resonances.push_back(f0_1500_12);
+    //dtoppp.resonances.push_back(f0_X_12);
+    //dtoppp.resonances.push_back(nonr);
     //dtoppp.resonances.push_back(be);
     //dtoppp.resonances.push_back(swave_12);
 
@@ -585,14 +585,14 @@ std::pair<GooPdf*,DalitzPlotPdf*> TotalPdf(){
         if(bkgOn){
             GooPdf* bkgdalitz = makeBackgroundPdf();
             bkgdalitz->setParameterConstantness(true);
-            bkgdalitz->addSpecialMask(PdfBase::ForceSeparateNorm);
+            //bkgdalitz->addSpecialMask(PdfBase::ForceSeparateNorm);\\ don't do nothing
             comps.push_back(bkgdalitz);
             Variable constant("constant",1);
             std::vector<Variable> weights;
             weights.push_back(constant);
 
             AddPdf* overallPdf = new AddPdf("overallPdf",weights,comps);
-
+           
             return std::pair<GooPdf*,DalitzPlotPdf*>(overallPdf,signaldalitz);
         }else{
             ProdPdf* overallPdf = new ProdPdf("overallPdf",comps);
@@ -753,10 +753,12 @@ void runtoyfit(std::string name, int sample_number) {
     overallPdf.second->setDataSize(Data->getNumEvents(),3);
  
     
-    GooFit::FitManagerMinuit2 fitter(overallPdf.first);
+    GooFit::FitManagerMinuit1 fitter(overallPdf.first);
     fitter.setVerbosity(2);
     fitter.setMaxCalls(4000);
 
+    auto var = fitter.getMinuitObject()->getVaraibles();
+    fitter.getMinuitObject()->mnst
     std::string command = "mkdir -p Fit";
     if(system(command.c_str()) != 0)
         throw GooFit::GeneralError("Making `Fit` directory failed");
