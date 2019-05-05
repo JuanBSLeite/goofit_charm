@@ -2,6 +2,9 @@
 #include "TComplex.h"
 #include "TMath.h"
 
+#define POW2(x)(x*x)
+#define POW3(x)(x*x*x)
+
 //Globals
 
 double pi_MASS  = 0.13957018; //GEV
@@ -19,25 +22,132 @@ double m12_max = s12_max;
 
 //int slices = 60;
 
+double  lambda (double x, double y, double z){
+
+	double l;
+	l = (x - y - z)*(x - y - z) - 4*y*z;
+
+	return l;
+
+}
+
+double Form_Factor_Mother_Decay(int spin, double M, double sab, double mcsq, double mR){
+    
+    double s = M*M, mRsq = mR*mR;
+    double fD, fD0, pstr, pstr0, q2 =0;
+    double const rD2 = 25.0;
+    
+    
+    if (spin == 0) return 1;
+    else if (spin == 1) {
+        pstr0 = sqrt(lambda(s,mRsq,mcsq))/(2*M);
+        q2 = rD2*pstr0*pstr0;
+        fD0 = sqrt(1 + q2);
+        
+        pstr = sqrt(lambda(s,sab,mcsq))/(2*M);
+        q2 = rD2*pstr*pstr;
+        fD = fD0/sqrt(1 + q2);
+        return fD;
+    }
+    else if(spin == 2){
+        pstr0 = sqrt(lambda(s,mRsq,mcsq))/(2*M);
+        q2 = rD2*pstr0*pstr0;
+        fD0 = sqrt(9 + 3*q2 + q2*q2);
+        
+        pstr = sqrt(lambda(s,sab,mcsq))/(2*M);
+        q2 = rD2*pstr*pstr;
+        fD = fD0/sqrt(9 + 3*q2 + q2*q2);
+        return fD;
+    }
+    
+}
+
+double Form_Factor_Resonance_Decay(int spin, double mR, double sab, double masq, double mbsq){
+
+	double mRsq = mR*mR;
+    double fR, fR0, pstr, pstr0, q2 = 0;
+   
+    double const rR2 = 2.25;
+
+	if (spin == 0) return 1;
+	else if (spin == 1) {
+
+		pstr0 = sqrt(lambda(mRsq,masq,mbsq))/(2*mR);
+		q2 = rR2*pstr0*pstr0;
+		fR0 = sqrt(1 + q2);
+
+		pstr = sqrt(lambda(sab,masq,mbsq))/(2*sqrt(sab));
+		q2 = rR2*pstr*pstr;
+		fR = fR0/sqrt(1 + q2);
+
+		return fR;
+
+	}
+	else if(spin == 2){
+
+		pstr0 = sqrt((mRsq - masq - mbsq)*(mRsq - masq - mbsq) - 4*masq*mbsq)/(2*mR);
+		q2 = rR2*pstr0*pstr0;
+		fR0 = sqrt(9 + 3*q2 + q2*q2);
+
+		//pstr = sqrt(lambda(sab,masq,mbsq))/(2*sqrt(sab));
+		pstr = sqrt((sab - masq + mbsq)*(sab - masq + mbsq) - 4*sab*mbsq)/(2*sqrt(sab));
+		q2 = rR2*pstr*pstr;
+		fR = fR0/sqrt(9 + 3*q2 + q2*q2);
+
+		return fR;
+    }
+    
+
+}
+
+double Gamma(int spin, double mR, double width, double mab, double masq, double mbsq){
+
+	double pstr, pstr0,fR, mRsq = mR*mR, sab = mab;
+
+	pstr0 = sqrt(lambda(mRsq,masq,mbsq))/(2*mR);
+	pstr = sqrt(lambda(sab,masq,mbsq))/(2*mab);
+	if (spin == 0) return width*(pstr/pstr0)*(mR/mab);
+	else if (spin == 1){
+		fR = Form_Factor_Resonance_Decay(spin, mR, sab, masq, mbsq);
+		return width*pow((pstr/pstr0),3)*(mR/mab)*fR*fR;
+	}else if (spin == 2){
+		fR = Form_Factor_Resonance_Decay(spin, mR, sab, masq, mbsq);
+		return width*pow((pstr/pstr0),5)*(mR/mab)*fR*fR;
+	}
+
+}
 
 
 TComplex plainBW(double *x, double *par) {
 
     double resmass  = par[2];
     double reswidth = par[3];
-    double resmass2 = pow(resmass,2);
-    
-    double s    = x[0];
+    int spin = 0;
+    double mass2    = x[0];
    
-       // RBW evaluation
-        double A = (resmass2 - s);
-        double B = resmass2 * reswidth;
-        double C = 1.0 / (A*A + B*B);
+    double FF_MD = Form_Factor_Mother_Decay(spin, D_MASS, mass2, POW2(pi_MASS),resmass);
 
-        TComplex ret(A * C, B * C);
-        ret *= TComplex(par[0],par[1],1);
+    double FF_RD = Form_Factor_Resonance_Decay(spin, resmass, mass2,
+		       	POW2(pi_MASS),POW2(pi_MASS));
+        
+	        
+    double Width = Gamma(spin, resmass, reswidth, mass2,
+            POW2(pi_MASS),
+            POW2(pi_MASS)
+        );
 
-    return ret;
+    cout << FF_MD << "\t" << FF_RD << '\t' << Width << endl;
+        
+   
+        // RBW evaluation
+        double A =  mass2 - POW2(resmass) ;
+        double B = resmass * Width ;
+        double C = 1.0 / (POW2(A) + POW2(B));
+        TComplex _BW(A * C, B * C); 
+
+        _BW *= FF_MD*FF_RD*reswidth*resmass;
+
+    return TComplex(par[0],par[1])*_BW;
 }
 
 
@@ -108,7 +218,7 @@ void PWACoefs(int slices,double val){
 
     ofstream wr("files/PWACOEFS.txt");
 
-    double par[13] = {.3,.8,1.504,.109,1.0,.0,.965,0.165,0.695,0.5,0.5,1.430,0.320}; 
+    double par[17] = {.3,.8,1.504,.109,1.0,.0,.965,0.165,0.695,0.5,0.5,1.430,0.320,.3,.8,1.400,.3}; 
 
     int temp = 0;
     int j = 1;
@@ -122,7 +232,7 @@ void PWACoefs(int slices,double val){
 	
 
 
-		TComplex v = (plainBW(&s,par) +flatte(&s,&par[4]) + plainBW(&s,&par[9]));
+		TComplex v = (plainBW(&s,par) +flatte(&s,&par[4]) + plainBW(&s,&par[9]) + plainBW(&s,&par[13]));
     		bin_amp_real = v.Re();
     		bin_amp_img = v.Im();
 
