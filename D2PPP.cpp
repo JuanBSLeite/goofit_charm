@@ -502,13 +502,13 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
 
     //Pushing Resonances 
 
-    dtoppp.resonances.push_back(omega_12);
-    //dtoppp.resonances.push_back(f2_1270_12);
-    //dtoppp.resonances.push_back(f2_1525_12);
-    //dtoppp.resonances.push_back(f0_980_12);
+    //dtoppp.resonances.push_back(omega_12);
+    dtoppp.resonances.push_back(f2_1270_12);
+    dtoppp.resonances.push_back(f2_1525_12);
+    dtoppp.resonances.push_back(f0_980_12);
     //dtoppp.resonances.push_back(f0_1370_12);
-    //dtoppp.resonances.push_back(f0_1500_12);
-    //dtoppp.resonances.push_back(f0_X_12);
+    dtoppp.resonances.push_back(f0_1500_12);
+    dtoppp.resonances.push_back(f0_X_12);
     //dtoppp.resonances.push_back(nonr);
     //dtoppp.resonances.push_back(be);
     //dtoppp.resonances.push_back(swave_12);
@@ -758,7 +758,7 @@ void runtoyfit(std::string name, int sample_number) {
     fitter.setMaxCalls(4000);
 
     auto var = fitter.getMinuitObject()->getVaraibles();
-    fitter.getMinuitObject()->mnst
+    
     std::string command = "mkdir -p Fit";
     if(system(command.c_str()) != 0)
         throw GooFit::GeneralError("Making `Fit` directory failed");

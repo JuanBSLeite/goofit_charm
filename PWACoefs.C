@@ -36,10 +36,13 @@ double Form_Factor_Mother_Decay(int spin, double M, double sab, double mcsq, dou
     double s = M*M, mRsq = mR*mR;
     double fD, fD0, pstr, pstr0, q2 =0;
     double const rD2 = 25.0;
+    double ret;
     
+    if (spin == 0){
+         ret = 1;
+    }
     
-    if (spin == 0) return 1;
-    else if (spin == 1) {
+    if (spin == 1) {
         pstr0 = sqrt(lambda(s,mRsq,mcsq))/(2*M);
         q2 = rD2*pstr0*pstr0;
         fD0 = sqrt(1 + q2);
@@ -47,9 +50,10 @@ double Form_Factor_Mother_Decay(int spin, double M, double sab, double mcsq, dou
         pstr = sqrt(lambda(s,sab,mcsq))/(2*M);
         q2 = rD2*pstr*pstr;
         fD = fD0/sqrt(1 + q2);
-        return fD;
+        ret = fD;
     }
-    else if(spin == 2){
+   
+    if(spin == 2){
         pstr0 = sqrt(lambda(s,mRsq,mcsq))/(2*M);
         q2 = rD2*pstr0*pstr0;
         fD0 = sqrt(9 + 3*q2 + q2*q2);
@@ -57,8 +61,10 @@ double Form_Factor_Mother_Decay(int spin, double M, double sab, double mcsq, dou
         pstr = sqrt(lambda(s,sab,mcsq))/(2*M);
         q2 = rD2*pstr*pstr;
         fD = fD0/sqrt(9 + 3*q2 + q2*q2);
-        return fD;
+        ret = fD;
     }
+
+    return ret;
     
 }
 
@@ -68,9 +74,13 @@ double Form_Factor_Resonance_Decay(int spin, double mR, double sab, double masq,
     double fR, fR0, pstr, pstr0, q2 = 0;
    
     double const rR2 = 2.25;
+    double ret=-1;
 
-	if (spin == 0) return 1;
-	else if (spin == 1) {
+	if (spin == 0){
+        ret =1;
+    }
+    
+    if (spin == 1) {
 
 		pstr0 = sqrt(lambda(mRsq,masq,mbsq))/(2*mR);
 		q2 = rR2*pstr0*pstr0;
@@ -80,10 +90,11 @@ double Form_Factor_Resonance_Decay(int spin, double mR, double sab, double masq,
 		q2 = rR2*pstr*pstr;
 		fR = fR0/sqrt(1 + q2);
 
-		return fR;
+		ret = fR;
 
 	}
-	else if(spin == 2){
+    
+    if(spin == 2){
 
 		pstr0 = sqrt((mRsq - masq - mbsq)*(mRsq - masq - mbsq) - 4*masq*mbsq)/(2*mR);
 		q2 = rR2*pstr0*pstr0;
@@ -94,26 +105,34 @@ double Form_Factor_Resonance_Decay(int spin, double mR, double sab, double masq,
 		q2 = rR2*pstr*pstr;
 		fR = fR0/sqrt(9 + 3*q2 + q2*q2);
 
-		return fR;
+		ret = fR;
     }
-    
+    return ret;
 
 }
 
 double Gamma(int spin, double mR, double width, double mab, double masq, double mbsq){
 
-	double pstr, pstr0,fR, mRsq = mR*mR, sab = mab;
+    double pstr, pstr0,fR, mRsq = mR*mR, sab = mab;
+    double ret=-1;
 
 	pstr0 = sqrt(lambda(mRsq,masq,mbsq))/(2*mR);
 	pstr = sqrt(lambda(sab,masq,mbsq))/(2*mab);
-	if (spin == 0) return width*(pstr/pstr0)*(mR/mab);
-	else if (spin == 1){
+	if (spin == 0){
+        ret =  width*(pstr/pstr0)*(mR/mab);
+    }
+    
+    if (spin == 1){
 		fR = Form_Factor_Resonance_Decay(spin, mR, sab, masq, mbsq);
-		return width*pow((pstr/pstr0),3)*(mR/mab)*fR*fR;
-	}else if (spin == 2){
+		ret = width*pow((pstr/pstr0),3)*(mR/mab)*fR*fR;
+    }
+    
+    if (spin == 2){
 		fR = Form_Factor_Resonance_Decay(spin, mR, sab, masq, mbsq);
-		return width*pow((pstr/pstr0),5)*(mR/mab)*fR*fR;
-	}
+		ret = width*pow((pstr/pstr0),5)*(mR/mab)*fR*fR;
+    }
+    
+    return ret;
 
 }
 
@@ -136,7 +155,7 @@ TComplex plainBW(double *x, double *par) {
             POW2(pi_MASS)
         );
 
-    cout << FF_MD << "\t" << FF_RD << '\t' << Width << endl;
+    //cout << FF_MD << "\t" << FF_RD << '\t' << Width << endl;
         
    
         // RBW evaluation
@@ -218,7 +237,7 @@ void PWACoefs(int slices,double val){
 
     ofstream wr("files/PWACOEFS.txt");
 
-    double par[17] = {.3,.8,1.504,.109,1.0,.0,.965,0.165,0.695,0.5,0.5,1.430,0.320,.3,.8,1.400,.3}; 
+    double par[13] = {.1,-.5,1.505,.109,1.0,.0,.965,0.165,0.795,-0.2,0.7,1.280,0.260}; 
 
     int temp = 0;
     int j = 1;
@@ -232,7 +251,7 @@ void PWACoefs(int slices,double val){
 	
 
 
-		TComplex v = (plainBW(&s,par) +flatte(&s,&par[4]) + plainBW(&s,&par[9]) + plainBW(&s,&par[13]));
+		TComplex v = (plainBW(&s,par) +flatte(&s,&par[4]) + plainBW(&s,&par[9]) );
     		bin_amp_real = v.Re();
     		bin_amp_img = v.Im();
 
