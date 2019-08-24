@@ -71,12 +71,12 @@ bool saveEffPlot= false;
 bool doEffSwap  = false;
 bool doBkgSwap  = false;
 bool toyOn      = true;
-bool bkgOn      = false;
-bool effOn      = false;
+bool bkgOn      = true;
+bool effOn      = true;
 bool bdt = false;
 
 const double NevG = 1e7; 
-const int bins = 3000;
+const int bins = 400;
 
 fptype s12_min = POW2(d1_MASS  + d2_MASS);
 fptype s12_max = POW2(D_MASS   - d2_MASS);
@@ -107,10 +107,10 @@ TH2F *underlyingBins     = nullptr;
 const string pwa_file = "files/PWACOEFS.txt";
 
 // Data File
-const string data_name = "/mnt/e/Dropbox/ic/D2PPP/juan/ntuples/dados/Ds_PPP.root";
+const string data_name = "../../../dados/DsPPP_92.root";
 const string tree_name = "DecayTree";
-const string bkghisto_file = "/mnt/e/Dropbox/ic/D2PPP/juan/ntuples/dados/bkg_spline_both_wings.root";
-const string effhisto_file = "/mnt/e/Dropbox/ic/D2PPP/juan/ntuples/dados/eff.root";
+const string bkghisto_file = "../../../dados/bkg_histo_16.root";
+const string effhisto_file = "../../../dados/eff_16.root";
 
 //Declaring Functions 
 void saveParameters(std::string file, const std::vector<Variable> &param,   bool isValid,  double fcn,  std::vector<std::vector<fptype>> ff );
@@ -187,13 +187,12 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
     int i = 0;
     while(reader >> e1 >> e2 >> e3) {
 
-        HH_bin_limits.push_back(e1);
+        HH_bin_limits.push_back(e1*e1);
 
-        emag = e2;//sqrt(e2*e2+e3*e3);
-        ephs = e3;//TMath::ATan2(e3,e2);
-
-        Variable va(fmt::format("pwa_coef_{}_real", i), emag, .000001, 0,0);
-        Variable vp(fmt::format("pwa_coef_{}_img", i), ephs, .000001, 0,0);
+        emag = e2*cos(e3);
+        ephs = e2*sin(e3);
+        Variable va(fmt::format("pwa_coef_{}_real", i), emag, .01, 0,0);
+        Variable vp(fmt::format("pwa_coef_{}_img", i), ephs, .01, 0,0);
 
         pwa_coefs_amp.push_back(va);
         pwa_coefs_phs.push_back(vp);
@@ -225,99 +224,53 @@ GooPdf* makeEfficiencyPdf() {
     BinnedDataSet *binEffData = new BinnedDataSet(lvars);
     
     TFile *f     = TFile::Open(effhisto_file.c_str());
-    effHistogram = (TH2F *)f->Get("accm");
-    effHistogram->Scale(1./effHistogram->Integral());
-    cout << "Efficiency integral = " << effHistogram->Integral() << endl;
+    auto effHistogram = (TH2F *)f->Get("h_eff");
+    
+    int evtCounter = 0;
 
-   // TH1F *effWeight = new TH1F("effWeight","",100,0.,1.);
-
-    TRandom3 donram(50);
-    for(int i = 0; i < NevG; i++) {
-        do {
-            s12.setValue(donram.Uniform(s12.getLowerLimit(), s12.getUpperLimit()));
-            s13.setValue(donram.Uniform(s13.getLowerLimit(), s13.getUpperLimit()));
-        } while(!inDalitz(s12.getValue(), s13.getValue(), D_MASS, d1_MASS, d2_MASS, d3_MASS));
-
-        double weight = effHistogram->GetBinContent(effHistogram->FindBin(s12.getValue(), s13.getValue()));
-        binEffData->addWeightedEvent(weight);
-
-        if(doEffSwap) {
-            double swapmass = s12.getValue();
-            s12.setValue(s13.getValue());
-            s13.setValue(swapmass);
-            weight = effHistogram->GetBinContent(effHistogram->FindBin(s12.getValue(), s13.getValue()));
+    for(int i = 0; i < s12.getNumBins(); ++i) {
+        s12.setValue(s12.getLowerLimit() + (s12.getUpperLimit() - s12.getLowerLimit()) * (i + 0.5) / s12.getNumBins());
+        for(int j = 0; j < s13.getNumBins(); ++j) {
+            s13.setValue(s13.getLowerLimit() + (s13.getUpperLimit() - s13.getLowerLimit()) * (j + 0.5) / s13.getNumBins());
+            if(!inDalitz(s12.getValue(), s13.getValue(), D_MASS, d1_MASS, d2_MASS, d3_MASS)){continue;}
+            double weight = effHistogram->GetBinContent(effHistogram->FindBin(s12.getValue(), s13.getValue()));
             binEffData->addWeightedEvent(weight);
+
         }
     }
-    if(saveEffPlot) {
-        style();
-        TCanvas foo;
-        foo.cd();
-        effHistogram->Draw("colz");
-        foo.SaveAs("plots/efficiency_bins.png");
-        foo.SetLogz(true);
-        foo.SaveAs("plots/efficiency_bins_log.png");
-    }
-    // Smooth
-    Variable *effSmoothing = new Variable("effSmoothing_eff", 0);
-    SmoothHistogramPdf *ret = new SmoothHistogramPdf("efficiency", binEffData, *effSmoothing);
 
+
+    // Smooth
+    Variable *effSmoothing = new Variable("effSmoothing_eff", 0.0);
+    SmoothHistogramPdf *ret = new SmoothHistogramPdf("efficiency", binEffData, *effSmoothing);
     return ret;
 }
 
 GooPdf* makeBackgroundPdf() {
 
-   
-
    BinnedDataSet *binBkgData = new BinnedDataSet({s12, s13});
     
     TFile *f = new TFile(bkghisto_file.c_str());
-    
-    
-    bkgHistogram = (TH2F*)f->Get("accm");
+    auto bkgHistogram = (TH2F*)f->Get("h_eff");
    
+    int evtCounter = 0;
 
-    TRandom3 donram(90);
-    for(int i = 0; i < NevG; i++) {
-        do {
-            s12.setValue(donram.Uniform(s12.getLowerLimit(), s12.getUpperLimit()));
-            s13.setValue(donram.Uniform(s13.getLowerLimit(), s13.getUpperLimit()));
-        } while(!inDalitz(s12.getValue(), s13.getValue(), D_MASS, d1_MASS, d2_MASS, d3_MASS));
-
-        double weight = bkgHistogram->GetBinContent(bkgHistogram->FindBin(s12.getValue(), s13.getValue()));
-
-        binBkgData->addWeightedEvent(weight);
-
-        if(doBkgSwap) {
-            double swapmass = s12.getValue();
-            s12.setValue(s13.getValue());
-            s13.setValue(swapmass);
-            weight = bkgHistogram->GetBinContent(bkgHistogram->FindBin(s12.getValue(), s13.getValue()));
+    for(int i = 0; i < s12.getNumBins(); ++i) {
+        s12.setValue(s12.getLowerLimit() + (s12.getUpperLimit() - s12.getLowerLimit()) * (i + 0.5) / s12.getNumBins());
+        for(int j = 0; j < s13.getNumBins(); ++j) {
+            s13.setValue(s13.getLowerLimit() + (s13.getUpperLimit() - s13.getLowerLimit()) * (j + 0.5) / s13.getNumBins());
+            if(!inDalitz(s12.getValue(), s13.getValue(), D_MASS, d1_MASS, d2_MASS, d3_MASS)){continue;}
+            double weight = bkgHistogram->GetBinContent(bkgHistogram->FindBin(s12.getValue(), s13.getValue()));
             binBkgData->addWeightedEvent(weight);
-           
+
         }
     }
 
-
-
-    if(saveBkgPlot) {
-        style();
-        TCanvas foo;
-        bkgHistogram->Draw("colz");
-        foo.SetLogz(false);
-        foo.SaveAs("plots/background_bins.png");
-        foo.SetLogz(true);
-        foo.SaveAs("plots/background_bins_log.png");
-    }
-
-    
-
-    Variable *effSmoothing  = new Variable("effSmoothing_bkg",0);
+    Variable *effSmoothing  = new Variable("effSmoothing_bkg",0.);
     SmoothHistogramPdf *ret = new SmoothHistogramPdf("background", binBkgData, *effSmoothing);
 
     return ret;
 }
-
 GooPdf *makeDstar_veto() {
    
     VetoInfo Dstar_veto12(Variable("Dstar_veto12_min", 2.85), Variable("Dstar_veto12_max", s12_max), PAIR_12);
@@ -353,9 +306,9 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     TRandom3 donram(time(NULL));
     
     
-    double f0_980_MASS     = 0.965;
-    double f0_980_GPP     = 0.165;
-    double f0_980_GKK     = 0.695;
+    double f0_980_MASS     = 0.990;
+    double f0_980_GPP     = 0.02;
+    double f0_980_GKK     = 4.5;
     double f0_980_amp     = 1.0;
     double f0_980_img    = 0.0;
 
@@ -380,10 +333,29 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     double omega_amp    = fixed ? 0.8 : 0.8*donram.Uniform(-1.,1.);
     double omega_img  = fixed ? 0.8 : 0.8*donram.Uniform(-1.,1.);
 
+    double rho770_MASS   = .77549;
+    double rho770_WIDTH  = .1491;
+    //E791
+    //double rho770_amp    = 0.32*cos(torad(109));
+    //double rho770_img  = 0.32*sin(torad(109));
+    //Babar
+    double rho770_amp    = 0.19*cos(1.1);
+    double rho770_img  = 0.19*sin(1.1);
+    
+    
+    double rho1450_MASS   = 1.465;
+    double rho1450_WIDTH  = 0.4;
+    //E791
+    //double rho1450_amp    = 0.28*cos(torad(162));
+    //double rho1450_img  = 0.28*sin(torad(162));
+    //Babar
+    double rho1450_amp    = 1.2*cos(4.1);
+    double rho1450_img  = 1.2*sin(4.1);
+    
     double f2_1270_MASS     = 1.2755;
     double f2_1270_WIDTH    = 0.1867;
-    double f2_1270_amp      = fixed ? 0.3 : 0.3*donram.Uniform(-1.,1.);
-    double f2_1270_img    = fixed ? 0.8 : 0.8*donram.Uniform(-1.,1.);
+    double f2_1270_amp      = fixed ? 1.0 : 0.3*donram.Uniform(-1.,1.);
+    double f2_1270_img    = fixed ? 0.0 : 0.8*donram.Uniform(-1.,1.);
 
     double f2_1525_MASS     = 1.525;
     double f2_1525_WIDTH    = 0.073;
@@ -397,11 +369,24 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     Variable v_omega_real("omega_real",omega_amp, 0.001, -100.0, +100.0);
     Variable v_omega_img("omega_img",omega_img, 0.001, -100.0, +100.0);
 
-    //f2(1270)
-    Variable v_f2_1270_Mass("f2_1270_MASS",f2_1270_MASS,0.0008,f2_1270_MASS*0.5,f2_1270_MASS*1.5);
-    Variable v_f2_1270_Width("f2_1270_WIDTH",f2_1270_WIDTH,0.0025,f2_1270_WIDTH*0.5,f2_1270_WIDTH*1.5);
-    Variable v_f2_1270_real("f2_1270_real",f2_1270_amp, 0.001, -100.0, +100.0);
-    Variable v_f2_1270_img("f2_1270_img",f2_1270_img, 0.001, -100.0, +100.0);
+//rho(770)
+    Variable v_rho770_Mass("rho770_MASS",rho770_MASS,0.01,0,0);
+    Variable v_rho770_Width("rho770_WIDTH",rho770_WIDTH,0.01,0,0);
+    Variable v_rho770_real("rho770_real",rho770_amp, 0.01,0,0);
+    Variable v_rho770_img("rho770_img",rho770_img, 0.01,0,0);
+    
+    //rho(1450)
+    Variable v_rho1450_Mass("rho1450_MASS",rho1450_MASS,0.01,0,0);
+    Variable v_rho1450_Width("rho1450_WIDTH",rho1450_WIDTH,0.01,0,0);
+    Variable v_rho1450_real("rho1450_real",rho1450_amp, 0.01,0,0);
+    Variable v_rho1450_img("rho1450_img",rho1450_img, 0.01,0,0);
+
+	//f2(1270)
+    Variable v_f2_1270_Mass("f2_1270_MASS",f2_1270_MASS,0.01,0,0);
+    Variable v_f2_1270_Width("f2_1270_WIDTH",f2_1270_WIDTH,0.01,0,0);
+    Variable v_f2_1270_real("f2_1270_real",f2_1270_amp, 0.01,0,0);
+    Variable v_f2_1270_img("f2_1270_img",f2_1270_img, 0.01,0,0);
+
 
     //f2(1525)
     Variable v_f2_1525_Mass("f2_1525_MASS",f2_1525_MASS,0.0008,f2_1525_MASS*0.5,f2_1525_MASS*1.5);
@@ -453,6 +438,13 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     v_omega_Mass.setFixed(true);
     v_omega_Width.setFixed(true);
    
+    v_rho770_Mass.setFixed(true);
+    v_rho770_Width.setFixed(true);
+    
+    v_rho1450_Mass.setFixed(true);
+    v_rho1450_Width.setFixed(true);
+    
+    
     v_f2_1270_Mass.setFixed(true);
     v_f2_1270_Width.setFixed(true);
 
@@ -478,7 +470,11 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     be_imag.setFixed(true);
     
    //setting resonances
-   
+ResonancePdf* rho770_12 = new Resonances::RBW("rho770",v_rho770_real,v_rho770_img,v_rho770_Mass,v_rho770_Width,1,PAIR_12,true);
+    
+    ResonancePdf* rho1450_12 = new Resonances::RBW("rho1450",v_rho1450_real,v_rho1450_img,v_rho1450_Mass,v_rho1450_Width,1,PAIR_12,true);
+
+
     ResonancePdf* omega_12 = new Resonances::GS("omega",v_omega_real,v_omega_img,v_omega_Mass,v_omega_Width,1,PAIR_12,true);
     
     ResonancePdf* f2_1270_12 = new Resonances::RBW("f2",v_f2_1270_real,v_f2_1270_img,v_f2_1270_Mass,v_f2_1270_Width,2,PAIR_12,true);
@@ -499,19 +495,20 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
 
     //MIPWA
     ResonancePdf *swave_12 = loadPWAResonance(pwa_file, true);
-
     //Pushing Resonances 
 
     //dtoppp.resonances.push_back(omega_12);
+     dtoppp.resonances.push_back(rho770_12); 
+    dtoppp.resonances.push_back(rho1450_12);
     dtoppp.resonances.push_back(f2_1270_12);
-    dtoppp.resonances.push_back(f2_1525_12);
+    //dtoppp.resonances.push_back(f2_1525_12);
     dtoppp.resonances.push_back(f0_980_12);
     //dtoppp.resonances.push_back(f0_1370_12);
-    dtoppp.resonances.push_back(f0_1500_12);
-    dtoppp.resonances.push_back(f0_X_12);
+    //dtoppp.resonances.push_back(f0_1500_12);
+    //dtoppp.resonances.push_back(f0_X_12);
     //dtoppp.resonances.push_back(nonr);
     //dtoppp.resonances.push_back(be);
-    //dtoppp.resonances.push_back(swave_12);
+    dtoppp.resonances.push_back(swave_12);
 
     if(!eff) {
         // By default create a constant efficiency.
@@ -543,7 +540,6 @@ std::pair<GooPdf*,DalitzPlotPdf*> TotalPdf(){
 
         comps.clear();
         DalitzPlotPdf *signaldalitz = makesignalpdf(effWithVeto);
-        signaldalitz->addSpecialMask(PdfBase::ForceSeparateNorm);     
         comps.push_back(signaldalitz);
 
         
@@ -551,9 +547,9 @@ std::pair<GooPdf*,DalitzPlotPdf*> TotalPdf(){
         if(bkgOn){
             GooPdf* bkgdalitz = makeBackgroundPdf();
             bkgdalitz->setParameterConstantness(true);
-            bkgdalitz->addSpecialMask(PdfBase::ForceSeparateNorm);
+        
             comps.push_back(bkgdalitz);
-            Variable constant("constant",1);
+            Variable constant("constant",0.95);
             std::vector<Variable> weights;
             weights.push_back(constant);
 
@@ -577,7 +573,7 @@ std::pair<GooPdf*,DalitzPlotPdf*> TotalPdf(){
 
         comps.clear();
         DalitzPlotPdf *signaldalitz = makesignalpdf(effWithVeto);
-        signaldalitz->addSpecialMask(PdfBase::ForceSeparateNorm);
+       
         comps.push_back(signaldalitz);
 
         
@@ -585,9 +581,9 @@ std::pair<GooPdf*,DalitzPlotPdf*> TotalPdf(){
         if(bkgOn){
             GooPdf* bkgdalitz = makeBackgroundPdf();
             bkgdalitz->setParameterConstantness(true);
-            //bkgdalitz->addSpecialMask(PdfBase::ForceSeparateNorm);\\ don't do nothing
+      
             comps.push_back(bkgdalitz);
-            Variable constant("constant",1);
+            Variable constant("constant",0.95);
             std::vector<Variable> weights;
             weights.push_back(constant);
 
@@ -767,9 +763,9 @@ void runtoyfit(std::string name, int sample_number) {
     string input_name = fmt::format("Fit/fit_parameters_inicial.txt");
     saveParameters(input_name,params);
  
-    fitter.getMinuitObject()->fIstrat = 2;
+    fitter.getMinuitObject()->fIstrat = 0;
     fitter.getMinuitObject()->SetErrorDef(0.5);
-    fitter.setMaxCalls(4000);
+    fitter.setMaxCalls(200000);
     //fitter.useHesse(true);
     //fitter.useHesseBefore(false);
     //fitter.useImprove(true);
@@ -785,8 +781,8 @@ void runtoyfit(std::string name, int sample_number) {
 
 //
     // remove comment for plotting 
-  //  DalitzPlotter dp(overallPdf.first,overallPdf.second);
-  //  dp.Plot(D_MASS,d1_MASS,d2_MASS,d3_MASS,"#pi^{-} #pi^{+}","#pi^{-} #pi^{+}","#pi^{-} #pi^{+}","plots",*Data);
+    DalitzPlotter dp(overallPdf.first,overallPdf.second);
+    dp.Plot(D_MASS,d1_MASS,d2_MASS,d3_MASS,"#pi^{-} #pi^{+}","#pi^{-} #pi^{+}","#pi^{-} #pi^{+}","plots",*Data);
 
 }
 

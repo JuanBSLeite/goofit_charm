@@ -8,7 +8,7 @@
 //Globals
 
 double pi_MASS  = 0.13957018; //GEV
-double D_MASS   = 1.86959; //GEV
+double D_MASS   = 1.96834; //GEV
 
 double d1_MASS  = pi_MASS;  //daughter 1 mass
 double d2_MASS  = pi_MASS;
@@ -237,7 +237,7 @@ void PWACoefs(int slices,double val){
 
     ofstream wr("files/PWACOEFS.txt");
 
-    double par[13] = {.1,-.5,1.505,.109,1.0,.0,.965,0.165,0.795,-0.2,0.7,1.280,0.260}; 
+    double par[13] = {1.0,0.0,1.470,0.35}; 
 
     int temp = 0;
     int j = 1;
@@ -251,12 +251,12 @@ void PWACoefs(int slices,double val){
 	
 
 
-		TComplex v = (plainBW(&s,par) +flatte(&s,&par[4]) + plainBW(&s,&par[9]) );
-    		bin_amp_real = v.Re();
-    		bin_amp_img = v.Im();
+		TComplex v = (plainBW(&s,par));
+    		bin_amp_real = v.Rho();
+    		bin_amp_img = v.Theta();
 
     		printf("%lg = (%lg,%lg) \n ",s,bin_amp_real,bin_amp_img);
-    		wr << s << " " << bin_amp_real << " "<< bin_amp_img << endl;
+    		wr << sqrt(s) << " " << bin_amp_real << " "<< bin_amp_img << endl;
 
 	
     }
