@@ -17,7 +17,7 @@
 #include <TFile.h>
 #include <TTree.h>
 #include <TStyle.h>
-
+#include <TH2Poly.h>
 
 //Minuit
 
@@ -71,12 +71,12 @@ bool saveEffPlot= false;
 bool doEffSwap  = false;
 bool doBkgSwap  = false;
 bool toyOn      = true;
-bool bkgOn      = true;
-bool effOn      = true;
+bool bkgOn      = false;
+bool effOn      = false;
 bool bdt = false;
 
 const double NevG = 1e7; 
-const int bins = 400;
+const int bins = 500;
 
 fptype s12_min = POW2(d1_MASS  + d2_MASS);
 fptype s12_max = POW2(D_MASS   - d2_MASS);
@@ -189,11 +189,15 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
 
         HH_bin_limits.push_back(e1*e1);
 
-        emag = e2*cos(e3);
-        ephs = e2*sin(e3);
-        Variable va(fmt::format("pwa_coef_{}_real", i), emag, .01, 0,0);
-        Variable vp(fmt::format("pwa_coef_{}_img", i), ephs, .01, 0,0);
+        emag = e2;//e2*cos(e3);
+        ephs = e3;//e2*sin(e3);
+        Variable va(fmt::format("pwa_coef_{}_real", i), emag, .0001, -20.,+20.);
+        Variable vp(fmt::format("pwa_coef_{}_img", i), ephs, .0001,-20.,+20.);
 
+//	if((i==0)||(i==49)){
+//		va.setFixed(true);
+//		vp.setFixed(true);
+//	}
         pwa_coefs_amp.push_back(va);
         pwa_coefs_phs.push_back(vp);
         i++;
@@ -306,16 +310,16 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     TRandom3 donram(time(NULL));
     
     
-    double f0_980_MASS     = 0.990;
-    double f0_980_GPP     = 0.02;
-    double f0_980_GKK     = 4.5;
+    double f0_980_MASS     = 0.958;
+    double f0_980_GPP     = 0.1017;
+    double f0_980_GKK     = 3.31;
     double f0_980_amp     = 1.0;
     double f0_980_img    = 0.0;
 
-    double f0_1370_MASS  = 1.400;
-    double f0_1370_WIDTH = .3;
-    double f0_1370_amp   = fixed ? 0.3 : 0.3*donram.Uniform(-1.,1.);
-    double f0_1370_img = fixed ? 0.8 : 0.8*donram.Uniform(-1.,1.);
+    double f0_1370_MASS  = 1.468;
+    double f0_1370_WIDTH = .175;
+    double f0_1370_amp   = fixed ? -0.6 : 0.3*donram.Uniform(-1.,1.);
+    double f0_1370_img = fixed ? -0.47 : 0.8*donram.Uniform(-1.,1.);
 
 
     double f0_1500_MASS  = 1.505;
@@ -339,8 +343,8 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     //double rho770_amp    = 0.32*cos(torad(109));
     //double rho770_img  = 0.32*sin(torad(109));
     //Babar
-    double rho770_amp    = 0.19*cos(1.1);
-    double rho770_img  = 0.19*sin(1.1);
+    double rho770_amp    = -0.02;
+    double rho770_img  = -0.07;
     
     
     double rho1450_MASS   = 1.465;
@@ -349,13 +353,13 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     //double rho1450_amp    = 0.28*cos(torad(162));
     //double rho1450_img  = 0.28*sin(torad(162));
     //Babar
-    double rho1450_amp    = 1.2*cos(4.1);
-    double rho1450_img  = 1.2*sin(4.1);
+    double rho1450_amp    = 0.16;
+    double rho1450_img  = -0.14;
     
-    double f2_1270_MASS     = 1.2755;
-    double f2_1270_WIDTH    = 0.1867;
-    double f2_1270_amp      = fixed ? 1.0 : 0.3*donram.Uniform(-1.,1.);
-    double f2_1270_img    = fixed ? 0.0 : 0.8*donram.Uniform(-1.,1.);
+    double f2_1270_MASS     = 1.2751;
+    double f2_1270_WIDTH    = 0.1851;
+    double f2_1270_amp      = fixed ? -0.18 : 0.3*donram.Uniform(-1.,1.);
+    double f2_1270_img    = fixed ? 0.28 : 0.8*donram.Uniform(-1.,1.);
 
     double f2_1525_MASS     = 1.525;
     double f2_1525_WIDTH    = 0.073;
@@ -396,14 +400,15 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
 
     //f0(980)
     Variable v_f0_980_Mass("f0_980_MASS",f0_980_MASS,3.0,f0_980_MASS*0.5,f0_980_MASS*1.5);
-    Variable v_f0_980_GPP("f0_980_GPP",f0_980_GPP,0.01,f0_980_GPP*0,f0_980_GPP*20.0);
-    Variable v_f0_980_GKK("f0_980_GKK",f0_980_GKK,0.02,f0_980_GKK*0,f0_980_GKK*3.0);
+    Variable v_f0_980_GPP("f0_980_GPP",f0_980_GPP,0.01,f0_980_GPP*0.5,f0_980_GPP*1.5);
+    Variable v_f0_980_GKK("f0_980_GKK",f0_980_GKK,0.02,f0_980_GKK*0.5,f0_980_GKK*1.5);
     Variable v_f0_980_real("f0_980_real",f0_980_amp, 0.001, -100.0, +100.0);
     Variable v_f0_980_img("f0_980_img",f0_980_img, 0.001, -100.0, +100.0);
 
     v_f0_980_real.setFixed(true);
     v_f0_980_img.setFixed(true);
-
+    //v_f2_1270_real.setFixed(true);
+    //v_f2_1270_img.setFixed(true);
     
     //f0(1370)
     Variable v_f0_1370_Mass("f0_1370_MASS",f0_1370_MASS,0.4,f0_1370_MASS*0.1,f0_1370_MASS*1.5);
@@ -427,8 +432,8 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
 
 
     //NR
-    Variable nonr_real("nonr_real", fixed ? 1 : 1*donram.Uniform(-1.,1.), 0.001, -200.0, +200.0);
-    Variable nonr_imag("nonr_imag", fixed ? 0 : 1*donram.Uniform(-1.,1.), 0.001, -200.0, +200.0);
+    Variable nonr_real("nonr_real", fixed ? -0.9 : 1*donram.Uniform(-1.,1.), 0.001, -200.0, +200.0);
+    Variable nonr_imag("nonr_imag", fixed ? -1.21 : 1*donram.Uniform(-1.,1.), 0.001, -200.0, +200.0);
 
     Variable be_real("be_real", fixed ? 1 : 1*donram.Uniform(-1.,1.), 0.001, -200.0, +200.0);
     Variable be_imag("be_imag", fixed ? 0 : 1*donram.Uniform(-1.,1.), 0.001, -200.0, +200.0);
@@ -451,9 +456,9 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     v_f2_1525_Mass.setFixed(true);
     v_f2_1525_Width.setFixed(true);
 
-    v_f0_980_Mass.setFixed(true);
-    v_f0_980_GKK.setFixed(true);
-    v_f0_980_GPP.setFixed(true);
+    //v_f0_980_Mass.setFixed(true);
+    //v_f0_980_GKK.setFixed(true);
+    //v_f0_980_GPP.setFixed(true);
 
     v_f0_1370_Mass.setFixed(true);
     v_f0_1370_Width.setFixed(true);
@@ -500,13 +505,13 @@ ResonancePdf* rho770_12 = new Resonances::RBW("rho770",v_rho770_real,v_rho770_im
     //dtoppp.resonances.push_back(omega_12);
      dtoppp.resonances.push_back(rho770_12); 
     dtoppp.resonances.push_back(rho1450_12);
-    dtoppp.resonances.push_back(f2_1270_12);
+     dtoppp.resonances.push_back(f2_1270_12);
     //dtoppp.resonances.push_back(f2_1525_12);
     dtoppp.resonances.push_back(f0_980_12);
     //dtoppp.resonances.push_back(f0_1370_12);
     //dtoppp.resonances.push_back(f0_1500_12);
     //dtoppp.resonances.push_back(f0_X_12);
-    //dtoppp.resonances.push_back(nonr);
+    dtoppp.resonances.push_back(nonr);
     //dtoppp.resonances.push_back(be);
     dtoppp.resonances.push_back(swave_12);
 
@@ -750,7 +755,7 @@ void runtoyfit(std::string name, int sample_number) {
  
     
     GooFit::FitManagerMinuit1 fitter(overallPdf.first);
-    fitter.setVerbosity(2);
+    fitter.setVerbosity(1);
     fitter.setMaxCalls(4000);
 
     auto var = fitter.getMinuitObject()->getVaraibles();
@@ -763,11 +768,11 @@ void runtoyfit(std::string name, int sample_number) {
     string input_name = fmt::format("Fit/fit_parameters_inicial.txt");
     saveParameters(input_name,params);
  
-    fitter.getMinuitObject()->fIstrat = 0;
+    fitter.getMinuitObject()->fIstrat = 1;
     fitter.getMinuitObject()->SetErrorDef(0.5);
     fitter.setMaxCalls(200000);
-    //fitter.useHesse(true);
-    //fitter.useHesseBefore(false);
+    fitter.useHesse(false);
+    fitter.useHesseBefore(false);
     //fitter.useImprove(true);
     fitter.fit();
     
@@ -782,9 +787,19 @@ void runtoyfit(std::string name, int sample_number) {
 //
     // remove comment for plotting 
     DalitzPlotter dp(overallPdf.first,overallPdf.second);
-    dp.Plot(D_MASS,d1_MASS,d2_MASS,d3_MASS,"#pi^{-} #pi^{+}","#pi^{-} #pi^{+}","#pi^{-} #pi^{+}","plots",*Data);
+  dp.Plot(D_MASS,d1_MASS,d2_MASS,d3_MASS,"#pi^{-} #pi^{+}","#pi^{-} #pi^{+}","#pi^{-} #pi^{+}","plots",*Data);
+
+std::ofstream wr("plots/PWACoefs_fitted.txt");
+
+	for(int i = 0; i < HH_bin_limits.size(); i++){
+
+		wr << sqrt( HH_bin_limits[i] ) << "\t" << pwa_coefs_amp[i].getValue() << "\t" << pwa_coefs_phs[i].getValue() << std::endl;
+	}
+
+wr.close();
 
 }
+
 
 void plot(string name){
 

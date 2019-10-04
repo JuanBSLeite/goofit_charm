@@ -159,12 +159,12 @@ TComplex plainBW(double *x, double *par) {
         
    
         // RBW evaluation
-        double A =  mass2 - POW2(resmass) ;
-        double B = resmass * Width ;
+        double A =  -mass2 + POW2(resmass) ;
+        double B = resmass * reswidth ;
         double C = 1.0 / (POW2(A) + POW2(B));
         TComplex _BW(A * C, B * C); 
 
-        _BW *= FF_MD*FF_RD*reswidth*resmass;
+        
 
     return TComplex(par[0],par[1])*_BW;
 }
@@ -174,7 +174,7 @@ TComplex flatte(double *x, double *par) {
     
     double resmass            = par[2];
     double g1                 = par[3];
-    double g2                 = par[4];
+    double g2                 = par[4]*g1;
 
     double pipmass = 0.13957018;
     double pi0mass = 0.1349766;
@@ -186,39 +186,58 @@ TComplex flatte(double *x, double *par) {
     double twokmasssq   = 4 * kpmass * kpmass;
     double twok0masssq  = 4 * k0mass * k0mass;
 
-    TComplex ret(0., 0.);
-    
-        double rhopipi_real = 0, rhopipi_imag = 0;
-        double rhokk_real = 0, rhokk_imag = 0;
-
+    double resmass2 = POW2(resmass);
+    double rho1(0.0), rho2(0.0);
+   
         double s = x[0];
+        double dMSq = resmass2 - s;
 
-        if(s >= twopimasssq)
-            rhopipi_real += (2. / 3) * sqrt(1 - twopimasssq / s); // Above pi+pi- threshold
-        else
-            rhopipi_imag += (2. / 3) * sqrt(-1 + twopimasssq / s);
-        if(s >= twopi0masssq)
-            rhopipi_real += (1. / 3) * sqrt(1 - twopi0masssq / s); // Above pi0pi0 threshold
-        else
-            rhopipi_imag += (1. / 3) * sqrt(-1 + twopi0masssq / s);
-        if(s >= twokmasssq)
-            rhokk_real += 0.5 * sqrt(1 - twokmasssq / s); // Above K+K- threshold
-        else
-            rhokk_imag += 0.5 * sqrt(-1 + twokmasssq / s);
-        if(s >= twok0masssq)
-            rhokk_real += 0.5 * sqrt(1 - twok0masssq / s); // Above K0K0 threshold
-        else
-            rhokk_imag += 0.5 * sqrt(-1 + twok0masssq / s);
-            
-        double A = (resmass * resmass - s) + resmass * (rhopipi_imag * g1 + rhokk_imag * g2);
-        double B = resmass * (rhopipi_real * g1 + rhokk_real * g2);
-        double C = 1.0 / (A * A + B * B);
-        TComplex retur(A * C, B * C);
-        retur *= TComplex(par[0],par[1]);
+        if (s > twopi0masssq) {
+            rho1 = sqrt(1.0 - twopi0masssq/s)/3.0;
+            if (s > twopimasssq) {
+                rho1 += 2.0*sqrt(1.0 - twopimasssq/s)/3.0;
+                if (s > twokmasssq) {
+                    rho2 = 0.5*sqrt(1.0 - twokmasssq/s);
+                    if (s > twok0masssq) {
+                        rho2 += 0.5*sqrt(1.0 - twok0masssq/s);
+                    } else {
+                        // Continue analytically below higher channel thresholds
+                        // This contributes to the real part of the amplitude denominator
+                        dMSq += g2*resmass*0.5*sqrt(twok0masssq/s - 1.0);
+                    }
+                } else {
+                    // Continue analytically below higher channel thresholds
+                    // This contributes to the real part of the amplitude denominator
+                    rho2 = 0.0;
+                    dMSq += g2*resmass*(0.5*sqrt(twokmasssq/s - 1.0) + 0.5*sqrt(twok0masssq/s - 1.0));
+                }
+            } else {
+                // Continue analytically below higher channel thresholds
+                // This contributes to the real part of the amplitude denominator
+                dMSq += g1*resmass*2.0*sqrt(twopimasssq/s - 1.0)/3.0;
+            }
+        }
     
-    return retur;
-}
+        //the Adler-zero term fA = (m2 − sA)/(m20 − sA) can be used to suppress false 
+        //kinematic singularities when m goes below threshold. For f(0)(980), sA = 0.
+        
+        double massFactor = s/resmass2;
+        
+        double width1 = g1*rho1*massFactor;
+        double width2 = g2*rho2*massFactor;
+        double widthTerm = width1 + width2;
+    
+        TComplex resAmplitude(dMSq, widthTerm);
+    
+        double denomFactor = dMSq*dMSq + widthTerm*widthTerm;
+    
+        double invDenomFactor = 0.0;
+        if (denomFactor > 1e-10) {invDenomFactor = 1.0/denomFactor;}
+    
+        resAmplitude *= invDenomFactor;
 
+        return resAmplitude*TComplex(par[0],par[1]);
+}
 
 //Full SWave
 double SWave_amp(double *x, double *par){
@@ -234,28 +253,46 @@ void PWACoefs(int slices,double val){
     double s = 0;
     double bin_amp_real = 0;
     double bin_amp_img = 0;
+    printf("m12_min = %f e m12_max = %f \n",m12_min,m12_max);
 
     ofstream wr("files/PWACOEFS.txt");
 
-    double par[13] = {1.0,0.0,1.470,0.35}; 
+    double par[9] = {1.0,0.0,.958,.1,3.3,-0.6,-0.47,1.468,0.175}; 
 
     int temp = 0;
     int j = 1;
+    val*=val;
 
     for(int i = 0; i < slices; i++){
 
+	/*if(s<val){
+		s = m12_min + i*1.5*(val-m12_min)/(slices);
+		temp++;
+    	}else{
+	
+		s = val + j*(m12_max-val)/(slices - temp);
+		j++;
+	}*/
 
 	
-		s = m12_min + i*(m12_max-m12_min)/(slices - 1);
+
+	if(s<val){
+		s = m12_min + i*(val - m12_min)/(10-1) ;
+	}else{
+		s = val + j*(m12_max-val)/(40) ;
+		j++;
+	}
+	
+	//s = m12_min + i*(m12_max-m12_min)/(slices - 1);
 		
 	
 
 
-		TComplex v = (plainBW(&s,par));
-    		bin_amp_real = v.Rho();
-    		bin_amp_img = v.Theta();
+		TComplex v = (/*flatte(&s,par)+ */plainBW(&s,&par[5]));
+    		bin_amp_real = v.Re();
+    		bin_amp_img = v.Im();
 
-    		printf("%lg = (%lg,%lg) \n ",s,bin_amp_real,bin_amp_img);
+    		printf("%d : %lg = (%lg,%lg) \n ",i,s,bin_amp_real,bin_amp_img);
     		wr << sqrt(s) << " " << bin_amp_real << " "<< bin_amp_img << endl;
 
 	
