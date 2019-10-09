@@ -194,10 +194,10 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
         Variable va(fmt::format("pwa_coef_{}_real", i), emag, .0001, -20.,+20.);
         Variable vp(fmt::format("pwa_coef_{}_img", i), ephs, .0001,-20.,+20.);
 
-//	if((i==0)||(i==49)){
-//		va.setFixed(true);
-//		vp.setFixed(true);
-//	}
+	if((i<=3)||(i>=14)){
+		va.setFixed(true);
+		vp.setFixed(true);
+	}
         pwa_coefs_amp.push_back(va);
         pwa_coefs_phs.push_back(vp);
         i++;

@@ -261,7 +261,7 @@ void PWACoefs(int slices,double val){
 
     int temp = 0;
     int j = 1;
-    val*=val;
+    
 
     for(int i = 0; i < slices; i++){
 
@@ -277,9 +277,9 @@ void PWACoefs(int slices,double val){
 	
 
 	if(s<val){
-		s = m12_min + i*(val - m12_min)/(10-1) ;
+		s = m12_min + i*(val - m12_min)/(25-1) ;
 	}else{
-		s = val + j*(m12_max-val)/(40) ;
+		s = val + j*(m12_max-val)/(25) ;
 		j++;
 	}
 	
