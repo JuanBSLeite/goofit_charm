@@ -1,10 +1,10 @@
 #!/bin/sh
 START_TIME=$SECONDS
-#for i in $(seq 0 100); do
+#for i in $(seq 100 500); do
 #	./D2PPP -i $i gen -e 200000
 #done
 
-for i in $(seq 0 100); do
+for i in $(seq 100 500); do
 	./D2PPP -i $i fit	
 done
 

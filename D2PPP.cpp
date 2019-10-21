@@ -194,7 +194,7 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
         Variable va(fmt::format("pwa_coef_{}_real", i), emag, .0001, -20.,+20.);
         Variable vp(fmt::format("pwa_coef_{}_img", i), ephs, .0001,-20.,+20.);
 
-	if((i<=3)||(i>=14)){
+	if((i<=3)||(i>=21)){ //aumentar
 		va.setFixed(true);
 		vp.setFixed(true);
 	}
@@ -786,8 +786,8 @@ void runtoyfit(std::string name, int sample_number) {
 
 //
     // remove comment for plotting 
-    DalitzPlotter dp(overallPdf.first,overallPdf.second);
-  dp.Plot(D_MASS,d1_MASS,d2_MASS,d3_MASS,"#pi^{-} #pi^{+}","#pi^{-} #pi^{+}","#pi^{-} #pi^{+}","plots",*Data);
+//    DalitzPlotter dp(overallPdf.first,overallPdf.second);
+ // dp.Plot(D_MASS,d1_MASS,d2_MASS,d3_MASS,"#pi^{-} #pi^{+}","#pi^{-} #pi^{+}","#pi^{-} #pi^{+}","plots",*Data);
 
 std::ofstream wr("plots/PWACoefs_fitted.txt");
 
