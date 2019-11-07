@@ -261,7 +261,7 @@ void PWACoefs(int slices,double val){
 
     int temp = 0;
     int j = 1;
-    
+    val *= val; 
 
     for(int i = 0; i < slices; i++){
 

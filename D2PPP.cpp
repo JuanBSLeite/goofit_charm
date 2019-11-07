@@ -194,7 +194,7 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
         Variable va(fmt::format("pwa_coef_{}_real", i), emag, .0001, -20.,+20.);
         Variable vp(fmt::format("pwa_coef_{}_img", i), ephs, .0001,-20.,+20.);
 
-	if((i<=3)||(i>=21)){ //aumentar
+	if((i<13)||(i>22)){ //aumentar
 		va.setFixed(true);
 		vp.setFixed(true);
 	}
@@ -405,8 +405,8 @@ DalitzPlotPdf* makesignalpdf(GooPdf* eff){
     Variable v_f0_980_real("f0_980_real",f0_980_amp, 0.001, -100.0, +100.0);
     Variable v_f0_980_img("f0_980_img",f0_980_img, 0.001, -100.0, +100.0);
 
-    v_f0_980_real.setFixed(true);
-    v_f0_980_img.setFixed(true);
+    //v_f0_980_real.setFixed(true);
+    //v_f0_980_img.setFixed(true);
     //v_f2_1270_real.setFixed(true);
     //v_f2_1270_img.setFixed(true);
     
@@ -829,7 +829,7 @@ void genfitplot(int nsamples,int nvar){
     std::string inicial_name;
     ifstream r_inicial("Fit/fit_parameters_inicial.txt");
 	
-    TFile f("GenFit_Results.root","RECREATE");
+    TFile *f = new TFile("GenFit_Results.root","CREATE");
     TTree *t = new TTree("tree","Variables"); 
 
     double val[nvar];
@@ -914,7 +914,7 @@ void genfitplot(int nsamples,int nvar){
        }
 
    t->Write();
-   f.Close();
+   f->Close();
 }
 
 
