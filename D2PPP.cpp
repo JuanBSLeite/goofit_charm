@@ -52,6 +52,8 @@
 
 #include <thrust/transform_reduce.h>
 
+#include <TGraphErrors.h>
+
 #include <mpi.h>
 
 #define torad(x)(x*M_PI/180.)
@@ -63,32 +65,22 @@ using namespace ROOT;
 
 //Globals
 
-double pi_MASS  = 0.13957018; //GEV
-double D_MASS   = 1.96834; //GEV
+double pi_MASS  = 0.13957018; 
+double D_MASS   = 1.96834; 
 
 double Mother_MASS = D_MASS;
-double d1_MASS  = pi_MASS;  //daughter 1 mass
+double d1_MASS  = pi_MASS; 
 double d2_MASS  = pi_MASS;
 double d3_MASS  = pi_MASS;
 
-bool saveBkgPlot= false;
-bool saveEffPlot= false;
-bool doEffSwap  = false;
-bool doBkgSwap  = false;
-bool toyOn      = true;
-bool bkgOn      = true;
-bool effOn      = true;
-bool bdt = false;
-
-const double NevG = 1e7; 
-const int bins = 3200;
+const int bins = 400;
 
 fptype s12_min = POW2(d1_MASS  + d2_MASS);
 fptype s12_max = POW2(D_MASS   - d2_MASS);
 fptype s13_min = POW2(d1_MASS  + d3_MASS);
 fptype s13_max = POW2(D_MASS   - d2_MASS);
 
-Observable s12("s12",s12_min,s12_max); //s12^{2}
+Observable s12("s12",s12_min,s12_max); 
 Observable s13("s13",s12_min,s12_max);
 Observable s23("s23",s12_min,s12_max);
 EventNumber eventNumber("eventNumber");
@@ -107,20 +99,12 @@ vector<Variable> pwa_coefs_phs;
 // PWA INPUT FILE NAME
 const string pwa_file = "files/PWACOEFS.txt";
 
-// Data File
-const string data_name = "../../../dados/DsPPP_92.root";
-const string tree_name = "DecayTree";
-const string bkghisto_file = "../../../dados/bkg_histo_16.root";
-const string effhisto_file = "../../../dados/eff_16.root";
-
 //Declaring Functions 
 void saveParameters(std::string file, const std::vector<Variable> &param,   bool isValid,  double fcn,  std::vector<std::vector<fptype>> ff );
-void saveParameters(std::string file, const std::vector<Variable> &param);
     
-ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = false) {
+ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = true) {
 
     std::ifstream reader;
-//	GOOFIT_INFO("LOADING FILE {}",fname);
     reader.open(fname.c_str());
     assert(reader.good());
     HH_bin_limits.clear();
@@ -136,8 +120,6 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
 
         emag = e2*cos(e3);
         ephs = e2*sin(e3);
-	//ag = e2;
-	//ephs = e3;
 	    
         Variable va(fmt::format("pwa_coef_{}_mag", i), emag,0.01,0,0);//-100.,+100.);
         Variable vp(fmt::format("pwa_coef_{}_phase", i), ephs,0.01,0,0);//-100.,+100.);
@@ -158,22 +140,21 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = fals
         swave_amp_real.setFixed(true);
         swave_amp_imag.setFixed(true);
     }
-  //  cout << "Numbers loaded: " << HH_bin_limits.size() << " / " << i << endl;
 
     ResonancePdf *swave_12 = new Resonances::Spline("swave_12", swave_amp_real, swave_amp_imag, HH_bin_limits, pwa_coefs_amp, pwa_coefs_phs, PAIR_12, true);
 
     return swave_12;
 } 
 
-GooPdf* makeEfficiencyPdf() {
+GooPdf* makeEfficiencyPdf(std::string efffile, std::string effhist, Observable s12, Observable s13) {
 
     vector<Observable> lvars;
     lvars.push_back(s12);
     lvars.push_back(s13);
     BinnedDataSet *binEffData = new BinnedDataSet(lvars);
     
-    TFile *f     = TFile::Open(effhisto_file.c_str());
-    auto effHistogram = (TH2F *)f->Get("h_eff");
+    TFile *f     = TFile::Open(efffile.c_str());
+    auto effHistogram = (TH2F *)f->Get(effhist.c_str());
     int evtCounter = 0;
 
     for(int i = 0; i < s12.getNumBins(); ++i) {
@@ -187,19 +168,17 @@ GooPdf* makeEfficiencyPdf() {
         }
     }
 
-
-    // Smooth
     Variable *effSmoothing = new Variable("effSmoothing_eff", 0.0);
     SmoothHistogramPdf *ret = new SmoothHistogramPdf("efficiency", binEffData, *effSmoothing);
     return ret;
 }
 
-GooPdf* makeBackgroundPdf() {
+GooPdf* makeBackgroundPdf(std::string bkgfile, std::string bkghist, Observable s12, Observable s13) {
 
    BinnedDataSet *binBkgData = new BinnedDataSet({s12, s13});
     
-    TFile *f = new TFile(bkghisto_file.c_str());
-    auto bkgHistogram = (TH2F*)f->Get("h_eff");
+    TFile *f = new TFile(bkgfile.c_str());
+    auto bkgHistogram = (TH2F*)f->Get(bkghist.c_str());
    
     int evtCounter = 0;
 
@@ -214,7 +193,7 @@ GooPdf* makeBackgroundPdf() {
         }
     }
 
-    Variable *effSmoothing  = new Variable("effSmoothing_bkg",0.);
+    Variable *effSmoothing  = new Variable("Smoothing_bkg",0.);
     SmoothHistogramPdf *ret = new SmoothHistogramPdf("background", binBkgData, *effSmoothing);
 
     return ret;
@@ -228,8 +207,8 @@ GooPdf *makeDstar_veto() {
     VetoInfo Fiducial_veto13(Variable("DFiducial_veto13_min", 0.), Variable("Fiducial_veto13_max", s13.getLowerLimit()), PAIR_13);
     
     vector<VetoInfo> vetos;
-    vetos.push_back(Dstar_veto12);
-    vetos.push_back(Dstar_veto13);
+    //vetos.push_back(Dstar_veto12);
+    //vetos.push_back(Dstar_veto13);
     vetos.push_back(Fiducial_veto12);
     vetos.push_back(Fiducial_veto13);
 
@@ -443,16 +422,16 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     //Pushing Resonances 
     //dtoppp.resonances.push_back(sigma_12);
     dtoppp.resonances.push_back(omega_12); 
-    //dtoppp.resonances.push_back(rho770_12); 
-    ///dtoppp.resonances.push_back(rho1450_12);
-    //dtoppp.resonances.push_back(f2_1270_12);
+    dtoppp.resonances.push_back(rho770_12); 
+    dtoppp.resonances.push_back(rho1450_12);
+    dtoppp.resonances.push_back(f2_1270_12);
     //dtoppp.resonances.push_back(f2_1525_12);
-    dtoppp.resonances.push_back(f0_980_12);
+    //dtoppp.resonances.push_back(f0_980_12);
     //dtoppp.resonances.push_back(f0_1500_12);
     //dtoppp.resonances.push_back(f0_1370_12);
     //dtoppp.resonances.push_back(nonr);
-//    dtoppp.resonances.push_back(be);
-    //dtoppp.resonances.push_back(swave_12);
+    //dtoppp.resonances.push_back(be);
+    dtoppp.resonances.push_back(swave_12);
 
 
 
@@ -500,7 +479,7 @@ void saveParameters(const std::vector<ROOT::Minuit2::MinuitParameter> &param, bo
    output_file.close();
 }
 
-void getToyData(std::string toyFileName, GooFit::Application &app, DataSet &data) {
+void getToyData(std::string toyFileName, GooFit::Application &app, DataSet &data, bool toy) {
 
     toyFileName = app.get_filename(toyFileName, "MC/");
 
@@ -513,9 +492,15 @@ void getToyData(std::string toyFileName, GooFit::Application &app, DataSet &data
     auto tree       = (TTree*)openRoot->Get("DecayTree");
     auto s12_val(0.);
     auto s13_val(0.);
-    
-    tree->SetBranchAddress("s12",&s12_val);
-    tree->SetBranchAddress("s13",&s13_val);
+
+    if(toy){
+        tree->SetBranchAddress("s12",&s12_val);
+        tree->SetBranchAddress("s13",&s13_val);
+    }else{
+        
+        tree->SetBranchAddress("s12_pipi_DTF",&s12_val);
+        tree->SetBranchAddress("s13_pipi_DTF",&s13_val);
+    }
 
 
     for(size_t i = 0 ; i < tree->GetEntries(); i++){
@@ -525,6 +510,7 @@ void getToyData(std::string toyFileName, GooFit::Application &app, DataSet &data
         eventNumber.setValue(data.getNumEvents());
         data.addEvent();
         if(i<10) printf("[%d] = (%.2f , %.2f)\n",i,s12.getValue(),s13.getValue());
+        if(!toy && data.getNumEvents()==200000) break;
     }
 
 
@@ -562,11 +548,11 @@ void to_root(UnbinnedDataSet& toyMC , std::string name ){
 
 }
 
-int genFit(DalitzPlotPdf *signal, UnbinnedDataSet *data, int rank) {
+int genFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *data, int rank) {
 
-    signal->setData(data);
+    totalPdf->setData(data);
     signal->setDataSize(data->getNumEvents());
-    FitManager datapdf(signal);
+    FitManager datapdf(totalPdf);
     datapdf.setVerbosity(2);
     auto func_min = datapdf.fit();
    
@@ -577,19 +563,22 @@ int genFit(DalitzPlotPdf *signal, UnbinnedDataSet *data, int rank) {
     saveParameters(param, func_min.IsValid(), func_min.Fval(), output);	
     
     std::cout << "---------------------------------------------" << std::endl;
-    std::cout << "Sample " << rank << " fitted ! "		 << std::endl;
+    std::cout << "Sample " << rank << " fitted ! "		         << std::endl;
+    std::cout << "nEvents --> " << data->getNumEvents()          << std::endl;
+    std::cout << "minFCN --> "   << func_min.Fval()              << std::endl;
+    std::cout << "AmpNorm --> "   << totalPdf->normalize()       << std::endl;
     std::cout << "---------------------------------------------" << std::endl;
 
     return datapdf;
 }
 
 
-int runFit(DalitzPlotPdf *signal, UnbinnedDataSet *data, std::string name) {
+int runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *data, std::string name) {
 
-    signal->setData(data);
+    totalPdf->setData(data);
     signal->setDataSize(data->getNumEvents());
-    FitManager datapdf(signal);
-    datapdf.setVerbosity(1);
+    FitManager datapdf(totalPdf);
+    datapdf.setVerbosity(2);
     auto func_min = datapdf.fit();
    
     auto param = datapdf.getParams()->Parameters();
@@ -599,11 +588,55 @@ int runFit(DalitzPlotPdf *signal, UnbinnedDataSet *data, std::string name) {
     saveParameters(param, func_min.IsValid(), func_min.Fval(), output);	
     
     std::cout << "---------------------------------------------" << std::endl;
-    std::cout << "Sample -->" << output << " fitted ! "		     << std::endl;
+    std::cout << "Sample --> fitted ! "		                     << std::endl;
     std::cout << "nEvents --> " << data->getNumEvents()          << std::endl;
     std::cout << "minFCN --> "   << func_min.Fval()              << std::endl;
-    std::cout << "AmpNorm --> "   << signal->normalize()         << std::endl;
+    std::cout << "AmpNorm --> "   << totalPdf->normalize()       << std::endl;
+    std::cout << "Output fit saved in --> "   << output          << std::endl;
     std::cout << "---------------------------------------------" << std::endl;
+
+    ProdPdf prodsignal("prodsignal",{signal});
+    DalitzPlotter dplotter{&prodsignal, signal};
+
+    TCanvas foo;
+    auto dp_hist = dplotter.make2D();
+    dp_hist->Draw("colz");
+    foo.SaveAs("plots/DP_Signal_fitted.png");
+    auto s12_proj = (TH2F*)dp_hist->ProjectionX("s12");
+    s12_proj->Draw("Hist");
+    foo.SaveAs("plots/DP_s12_proj.png");
+    auto s13_proj = (TH2F*)dp_hist->ProjectionY("s13");
+    s13_proj->Draw("Hist");
+    foo.SaveAs("plots/DP_s13_proj.png");
+
+
+    //saving s-wave qmpiwa
+    size_t N = HH_bin_limits.size();
+    double amp[N];
+    double amp_er[N];
+    double phase[N];
+    double phase_er[N];
+    double s[N];
+    double s_er[N];
+    
+    for(size_t i = 0; i < N ; i++){
+        	s[i] = sqrt(HH_bin_limits[i]);
+       		amp[i] = pwa_coefs_amp[i].getValue();
+        	amp_er[i] = pwa_coefs_amp[i].getError();
+        	phase[i] = pwa_coefs_phs[i].getValue();
+        	phase_er[i] = pwa_coefs_phs[i].getError();
+        	s_er[i] = 0.0;
+    }
+
+    TGraphErrors *gr_real = new TGraphErrors(N,s,amp,s_er,amp_er);
+    TGraphErrors *gr_img = new TGraphErrors(N,s,phase,s_er,phase_er);
+
+    foo.Divide(2);
+    foo.cd(1);
+    gr_real->Draw("ALP");
+    foo.cd(2);
+    gr_img->Draw("ALP");
+    foo.SaveAs("plots/Swave.png");
 
     return datapdf;
 }
@@ -638,22 +671,36 @@ int main(int argc, char **argv){
     command = "mkdir -p Fit";
     if(system(command.c_str()) != 0)
         throw GooFit::GeneralError("Making `Fit` directory failed");
-    
+
+    // Make the Fit directory if it does not exist
+    command = "mkdir -p plots";
+    if(system(command.c_str()) != 0)
+        throw GooFit::GeneralError("Making `plots` directory failed");
+
     Observable s12("s12", s12_min, s12_max);
     Observable s13("s13", s13_min, s13_max);
     EventNumber eventNumber("eventNumber");
+
     s12.setNumBins(bins);
     s13.setNumBins(bins);
 
+
+    const string bkgfile = "../../../dados/bkg_histo_16.root";
+    const string efffile = "../../../dados/eff_16.root";
+    const string bkghist = "h_eff";
+    const string effhist = "h_eff";
+
     UnbinnedDataSet data({s12, s13, eventNumber});
 
+    auto efficiency = makeEfficiencyPdf(efffile,effhist,s12,s13);
+    auto background = makeBackgroundPdf(bkgfile,bkghist,s12,s13);
     auto signal = makesignalpdf(s12, s13, eventNumber);
 
-    ProdPdf prodpdf{"prodpdf", {signal}};
+    AddPdf *prodpdf = new AddPdf("prodpdf", Variable("frac",0.925), signal, background) ;
 
     auto localRank = app.get_localRank();
 
-    DalitzPlotter dplotter{&prodpdf, signal};
+    DalitzPlotter dplotter{prodpdf, signal};
 
     try{
 
@@ -664,12 +711,12 @@ int main(int argc, char **argv){
             std::cout << "----------------------------------------------------------" << std::endl;
             auto fullName= fmt::format("MC/{0}_{1}.root",filename,localRank);
             if(save_toy) to_root(data,fullName); 
-            return genFit(signal, &data, localRank);
+            return genFit(prodpdf,signal, &data, localRank);
         }else{
             auto fullName= fmt::format("{0}",filename);
-            getToyData(fullName, app, data);
+            getToyData(fullName, app, data,false);
             auto output = "Fit/fit_result.txt";	
-            return runFit(signal, &data, output);
+            return runFit(prodpdf,signal, &data, output);
         }
 
     }catch(const std::runtime_error &e) {
