@@ -54,7 +54,7 @@
 
 #include <TGraphErrors.h>
 
-#include <mpi.h>
+
 
 #define torad(x)(x*M_PI/180.)
 
@@ -75,13 +75,14 @@ double d3_MASS  = pi_MASS;
 
 const int bins = 400;
 
-fptype s12_min = POW2(d1_MASS  + d2_MASS);
-fptype s12_max = POW2(D_MASS   - d2_MASS);
-fptype s13_min = POW2(d1_MASS  + d3_MASS);
-fptype s13_max = POW2(D_MASS   - d2_MASS);
+fptype s12_min = POW2(d1_MASS  + d2_MASS)*0.9;
+fptype s12_max = POW2(D_MASS   - d2_MASS)*1.1;
+fptype s13_min = POW2(d1_MASS  + d3_MASS)*0.9;
+fptype s13_max = POW2(D_MASS   - d2_MASS)*1.1;
+
 
 Observable s12("s12",s12_min,s12_max); 
-Observable s13("s13",s12_min,s12_max);
+Observable s13("s13",s13_min,s13_max);
 Observable s23("s23",s12_min,s12_max);
 EventNumber eventNumber("eventNumber");
 
@@ -412,7 +413,7 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
 
     ResonancePdf *nonr = new Resonances::NonRes("nonr", nonr_real, nonr_imag);
 
-    //ResonancePdf *be   = new Resonances::BoseEinstein("be",be_real,be_imag,be_coef);
+    ResonancePdf *be   = new Resonances::BoseEinstein("be",be_real,be_imag,be_coef);
 
     //MIPWA
     ResonancePdf *swave_12 = loadPWAResonance(pwa_file, true);
@@ -430,7 +431,7 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     //dtoppp.resonances.push_back(f0_1500_12);
     //dtoppp.resonances.push_back(f0_1370_12);
     //dtoppp.resonances.push_back(nonr);
-    //dtoppp.resonances.push_back(be);
+    //sdtoppp.resonances.push_back(be);
     dtoppp.resonances.push_back(swave_12);
 
 
@@ -502,15 +503,22 @@ void getToyData(std::string toyFileName, GooFit::Application &app, DataSet &data
         tree->SetBranchAddress("s13_pipi_DTF",&s13_val);
     }
 
-
+    size_t j = 0;
     for(size_t i = 0 ; i < tree->GetEntries(); i++){
         tree->GetEntry(i);
         s12.setValue(s12_val);
         s13.setValue(s13_val);
         eventNumber.setValue(data.getNumEvents());
-        data.addEvent();
-        if(i<10) printf("[%d] = (%.2f , %.2f)\n",i,s12.getValue(),s13.getValue());
-        if(!toy && data.getNumEvents()==200000) break;
+        if((s12.getValue()<s12.getUpperLimit())
+            &&(s13.getValue()<s13.getUpperLimit())
+            &&(s12.getValue()>s12.getLowerLimit())
+            &&(s13.getValue()>s13.getLowerLimit()))
+        {
+            data.addEvent();
+            if(j<10) printf("[%d] = (%.2f , %.2f)\n",i,s12.getValue(),s13.getValue());
+            j++;
+            if(!toy && data.getNumEvents()==200000) break;
+        }
     }
 
 
@@ -575,6 +583,11 @@ int genFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *data, int ra
 
 int runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *data, std::string name) {
 
+    auto obs               = data->getObservables();
+    Observable s12         = obs.at(0);
+    Observable s13         = obs.at(1);
+    Observable eventNumber = obs.at(2);
+
     totalPdf->setData(data);
     signal->setDataSize(data->getNumEvents());
     FitManager datapdf(totalPdf);
@@ -595,20 +608,21 @@ int runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *data, std::s
     std::cout << "Output fit saved in --> "   << output          << std::endl;
     std::cout << "---------------------------------------------" << std::endl;
 
-    ProdPdf prodsignal("prodsignal",{signal});
-    DalitzPlotter dplotter{&prodsignal, signal};
+    DalitzPlotter dplotter{totalPdf, signal};
 
     TCanvas foo;
-    auto dp_hist = dplotter.make2D();
-    dp_hist->Draw("colz");
-    foo.SaveAs("plots/DP_Signal_fitted.png");
-    auto s12_proj = (TH2F*)dp_hist->ProjectionX("s12");
-    s12_proj->Draw("Hist");
-    foo.SaveAs("plots/DP_s12_proj.png");
-    auto s13_proj = (TH2F*)dp_hist->ProjectionY("s13");
-    s13_proj->Draw("Hist");
-    foo.SaveAs("plots/DP_s13_proj.png");
+    dplotter.Plot(D_MASS,d1_MASS,d2_MASS,d3_MASS,"s_{#pi^{-} #pi^{+}}","s_{#pi^{-} #pi^{+}}","s_{#pi^{-} #pi^{+}}","plots",*data);
 
+    auto toyMC = new UnbinnedDataSet({s12,s13,eventNumber});
+    dplotter.fillDataSetMC(*toyMC,10000000);
+
+    size_t npar = 0; //number of free parameters
+    for(size_t i = 0; i < param.size(); i++){
+        if((!param[i].IsFixed()) && (!param[i].IsConst())){
+            npar++;	
+        }
+    }
+    dplotter.chi2(npar,"Ds3pi_bins.txt",0.05,1.95,0.3,3.4,10000000,*data,*toyMC);
 
     //saving s-wave qmpiwa
     size_t N = HH_bin_limits.size();
@@ -619,6 +633,7 @@ int runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *data, std::s
     double s[N];
     double s_er[N];
     
+    std::ofstream wr("Fit/s_wave_fitted.txt");
     for(size_t i = 0; i < N ; i++){
         	s[i] = sqrt(HH_bin_limits[i]);
        		amp[i] = pwa_coefs_amp[i].getValue();
@@ -626,7 +641,10 @@ int runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *data, std::s
         	phase[i] = pwa_coefs_phs[i].getValue();
         	phase_er[i] = pwa_coefs_phs[i].getError();
         	s_er[i] = 0.0;
+            wr << std::fixed << std::setprecision(4) << sqrt(HH_bin_limits[i])<< '\t' << amp[i] << '\t' << phase[i] 
+	 	<< '\t' << s_er[i] << '\t' << amp_er[i] << '\t' << phase_er[i] << std::endl;
     }
+    wr.close();
 
     TGraphErrors *gr_real = new TGraphErrors(N,s,amp,s_er,amp_er);
     TGraphErrors *gr_img = new TGraphErrors(N,s,phase,s_er,phase_er);
@@ -694,7 +712,7 @@ int main(int argc, char **argv){
 
     auto efficiency = makeEfficiencyPdf(efffile,effhist,s12,s13);
     auto background = makeBackgroundPdf(bkgfile,bkghist,s12,s13);
-    auto signal = makesignalpdf(s12, s13, eventNumber);
+    auto signal = makesignalpdf(s12, s13, eventNumber,efficiency);
 
     AddPdf *prodpdf = new AddPdf("prodpdf", Variable("frac",0.925), signal, background) ;
 
