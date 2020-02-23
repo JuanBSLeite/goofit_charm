@@ -75,10 +75,10 @@ double d3_MASS  = pi_MASS;
 
 const int bins = 400;
 
-fptype s12_min = POW2(d1_MASS  + d2_MASS)*0.9;
-fptype s12_max = POW2(D_MASS   - d2_MASS)*1.1;
-fptype s13_min = POW2(d1_MASS  + d3_MASS)*0.9;
-fptype s13_max = POW2(D_MASS   - d2_MASS)*1.1;
+fptype s12_min = POW2(d1_MASS  + d2_MASS);
+fptype s12_max = POW2(D_MASS   - d2_MASS);
+fptype s13_min = POW2(d1_MASS  + d3_MASS);
+fptype s13_max = POW2(D_MASS   - d2_MASS);
 
 
 Observable s12("s12",s12_min,s12_max); 
@@ -91,7 +91,7 @@ Variable Daughter1_Mass("Daughter1_Mass",d1_MASS);
 Variable Daughter2_Mass("Daughter2_Mass",d2_MASS);
 Variable Daughter3_Mass("Daughter3_Mass",d3_MASS);
 
-UnbinnedDataSet* Data = nullptr;
+UnbinnedDataSet* toyMC = nullptr;
 
 vector<fptype> HH_bin_limits;
 vector<Variable> pwa_coefs_amp;
@@ -200,7 +200,7 @@ GooPdf* makeBackgroundPdf(std::string bkgfile, std::string bkghist, Observable s
     return ret;
 }
 
-GooPdf *makeDstar_veto() {
+GooPdf *makeDstar_veto(Observable s12, Observable s13) {
    
     VetoInfo Dstar_veto12(Variable("Dstar_veto12_min", 2.85), Variable("Dstar_veto12_max", s12_max), PAIR_12);
     VetoInfo Dstar_veto13(Variable("Dstar_veto13_min", 2.85), Variable("Dstar_veto13_max", s12_max), PAIR_13);
@@ -583,11 +583,6 @@ int genFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *data, int ra
 
 int runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *data, std::string name) {
 
-    auto obs               = data->getObservables();
-    Observable s12         = obs.at(0);
-    Observable s13         = obs.at(1);
-    Observable eventNumber = obs.at(2);
-
     totalPdf->setData(data);
     signal->setDataSize(data->getNumEvents());
     FitManager datapdf(totalPdf);
@@ -613,7 +608,6 @@ int runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *data, std::s
     TCanvas foo;
     dplotter.Plot(D_MASS,d1_MASS,d2_MASS,d3_MASS,"s_{#pi^{-} #pi^{+}}","s_{#pi^{-} #pi^{+}}","s_{#pi^{-} #pi^{+}}","plots",*data);
 
-    auto toyMC = new UnbinnedDataSet({s12,s13,eventNumber});
     dplotter.fillDataSetMC(*toyMC,10000000);
 
     size_t npar = 0; //number of free parameters
@@ -709,6 +703,7 @@ int main(int argc, char **argv){
     const string effhist = "h_eff";
 
     UnbinnedDataSet data({s12, s13, eventNumber});
+    toyMC = new UnbinnedDataSet({s12,s13,eventNumber});
 
     auto efficiency = makeEfficiencyPdf(efffile,effhist,s12,s13);
     auto background = makeBackgroundPdf(bkgfile,bkghist,s12,s13);
