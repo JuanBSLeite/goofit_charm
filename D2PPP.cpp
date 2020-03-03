@@ -113,19 +113,19 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = true
     double e1, e2, e3;
     double emag, ephs;
     int i = 0;
-    int n = 12;
+    int n = 10;
     int m = 35;
-    double min = 0.990 - m*0.02;
+    double min = 0.990 - n*0.02;
     double max = 0.990 + n*0.02;
 
     while(reader >> e1 >> e2 >> e3) {
 
         //if(e1<min || e1>max){
             HH_bin_limits.push_back(e1*e1);
-            //emag = e2*cos(e3);
-            //ephs = e2*sin(e3);
-            emag = e2;
-            ephs = e3;
+            emag = e2*cos(e3);
+            ephs = e2*sin(e3);
+            //emag = e2;
+            //ephs = e3;
             
             //Variable va(fmt::format("pwa_coef_{}_mag", i), emag,0.0001,+1.e-5,+1.e+5);
             Variable va(fmt::format("pwa_coef_{}_mag", i), emag,0.0001,0,0);
@@ -137,6 +137,7 @@ ResonancePdf *loadPWAResonance(const string fname = pwa_file, bool fixAmp = true
             i++;
         //}
     }
+
     std::cout << "------------------------------------------" << std::endl;
     std::cout << pwa_coefs_amp.size() << " QMIPWA points loaded!" << std::endl;
     std::cout << "large bin range --> (" << min << " , " << max << ")" << std::endl; 
@@ -241,9 +242,9 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
 
     //Mass and width
 
-    double f0_980_MASS    = 0.977;
-    double f0_980_GPP     = 0.165;//0.02;
-    double f0_980_GKK     = 0.694;//4.5*0.02;
+    double f0_980_MASS    = 0.965;
+    double f0_980_GPP     = 0.165;
+    double f0_980_GKK     = 4.21*0.165;
     double f0_980_WIDTH   = 0.04;
     double f0_980_amp     = 1.0;
     double f0_980_img     = 0.0;
@@ -254,7 +255,7 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     double a0_980_img     = 0.0;
     
     double f0_1370_MASS  = 1.434;
-    double f0_1370_WIDTH = .172;
+    double f0_1370_WIDTH = 0.172;
     double f0_1370_amp   = 0.75*cos(torad(198));
     double f0_1370_img = 0.75*sin(torad(198));
 
@@ -276,11 +277,9 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     //Babar
     //double rho770_amp    = 0.19*cos(1.1);
     //double rho770_img  = 0.19*sin(1.1);
-  
 
-
-    double rho1450_MASS   = 1.465;// + 5*0.025;
-    double rho1450_WIDTH  = 0.4;// + 3*0.06;
+    double rho1450_MASS   = 1.465 + 5*0.025;
+    double rho1450_WIDTH  = 0.4 + 3*0.06;
     //E791
     double rho1450_amp    = 0.28*cos(torad(162));
     double rho1450_img  = 0.28*sin(torad(162));
@@ -288,9 +287,6 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     //double rho1450_amp    = 1.2*cos(4.1);
     //double rho1450_img  = 1.2*sin(4.1);
  
-
-    
-    
     double f2_1270_MASS     = 1.2751;
     double f2_1270_WIDTH    = 0.1851;
     //E791
@@ -338,8 +334,8 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
 
     //f0(980)
     Variable v_f0_980_Mass("f0_980_MASS",f0_980_MASS,.02,0,0);
-    Variable v_f0_980_GPP("f0_980_GPP",f0_980_GPP,0.01,0.,0);
-    Variable v_f0_980_GKK("f0_980_GKK",f0_980_GKK,0.01,0.,0.);
+    Variable v_f0_980_GPP("f0_980_GPP",f0_980_GPP,0.01,0,0);
+    Variable v_f0_980_GKK("f0_980_GKK",f0_980_GKK,0.01,0,0);
     Variable v_f0_980_Width("f0_980_WIDTH",f0_980_WIDTH,0.01,0,0);
     Variable v_f0_980_real("f0_980_real",f0_980_amp, 0.01,0,0);
     Variable v_f0_980_img("f0_980_img",f0_980_img, 0.01,0,0);
@@ -370,10 +366,10 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     Variable v_f0_1500_img("f0_1500_img",f0_1500_img, 0.01, 0,0);
 
     //NR
-    //Variable nonr_real("nonr_real",0.09*cos(torad(181)), 0.01,0,0);
-    //Variable nonr_imag("nonr_imag",0.09*sin(torad(181)), 0.01,0,0);
-    Variable nonr_real("nonr_real",-0.154425, 0.01,0,0);
-    Variable nonr_imag("nonr_imag",-1.910779, 0.01,0,0);
+    Variable nonr_real("nonr_real",0.09*cos(torad(181)), 0.01,0,0);
+    Variable nonr_imag("nonr_imag",0.09*sin(torad(181)), 0.01,0,0);
+    //Variable nonr_real("nonr_real",-0.154425, 0.01,0,0);
+    //Variable nonr_imag("nonr_imag",-1.910779, 0.01,0,0);
 
 
     Variable be_real("be_real",1., 0.01,0,0);
@@ -404,8 +400,8 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     v_a0_980_Mass.setFixed(true);
     v_a0_980_Width.setFixed(true);
 
-    //v_f0_1370_Mass.setFixed(true);
-    //v_f0_1370_Width.setFixed(true);
+    v_f0_1370_Mass.setFixed(true);
+    v_f0_1370_Width.setFixed(true);
 
     v_f0_1500_Mass.setFixed(true);
     v_f0_1500_Width.setFixed(true);
@@ -448,14 +444,12 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     //MIPWA
     ResonancePdf *swave_12 = loadPWAResonance(pwa_file, true);
 
-    //swave_12->recalculateCache();
-
     //Pushing Resonances 
     //dtoppp.resonances.push_back(sigma_12);
-    dtoppp.resonances.push_back(omega_12); 
-    dtoppp.resonances.push_back(rho770_12); 
-    dtoppp.resonances.push_back(rho1450_12);
-    dtoppp.resonances.push_back(f2_1270_12);
+    //dtoppp.resonances.push_back(omega_12); 
+    //dtoppp.resonances.push_back(rho770_12); 
+    //dtoppp.resonances.push_back(rho1450_12);
+    //dtoppp.resonances.push_back(f2_1270_12);
     //dtoppp.resonances.push_back(f2_1525_12);
     //dtoppp.resonances.push_back(a0_980_12);
     //dtoppp.resonances.push_back(f0_980_12);
@@ -567,7 +561,7 @@ void getToyData(std::string toyFileName, GooFit::Application &app, DataSet &data
             data.addEvent();
             if(j<10) printf("[%d] = (%f , %f)\n",i,s12.getValue(),s13.getValue());
             j++;
-            if(!toy && data.getNumEvents()==200000) break;
+            if(data.getNumEvents()==200000) break;
         }
     }
 
@@ -672,6 +666,24 @@ int runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *data, std::s
     datapdf.setTolerance(0.5);
     auto func_min = datapdf.fit();
     
+    //If you want to free some paramters after previous fit
+    //signalpdf->getParameterByName("parameter")->setFixed(false)
+    //FitManager datapdf2(totalPdf);
+    //auto func_min2 = datapdf2.fit();
+
+    /*for(int i=0; i<pwa_coefs_amp.size();i++){
+        signal->getParameterByName( fmt::format("pwa_coef_{0}_mag",i) )->setFixed(false);
+        signal->getParameterByName( fmt::format("pwa_coef_{0}_phase",i) )->setFixed(false);
+    }
+
+    signal->getParameterByName("f0_980_MASS")->setFixed(false);
+    signal->getParameterByName("f0_980_GPP")->setFixed(false);
+    signal->getParameterByName("f0_980_GKK")->setFixed(false);
+
+    FitManager datapdf2(totalPdf);
+    datapdf2.setTolerance(0.5);
+    func_min = datapdf2.fit();*/
+
     auto param = datapdf.getParams()->Parameters();
     
     auto output = name;
@@ -730,7 +742,7 @@ int runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *data, std::s
     
     std::ofstream wr("Fit/s_wave_fitted.txt");
     for(size_t i = 0; i < N ; i++){
-        	s[i] = sqrt(HH_bin_limits[i]);
+        	s[i] = HH_bin_limits[i];
        		amp[i] = pwa_coefs_amp[i].getValue();
         	amp_er[i] = pwa_coefs_amp[i].getError();
         	phase[i] = pwa_coefs_phs[i].getValue();
@@ -761,8 +773,6 @@ int runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *data, std::s
     foo.cd(2);
     gr_img->Draw("ALP");
     foo.SaveAs("plots/Swave.png");
-
-    
 
     return datapdf;
 }
@@ -844,6 +854,11 @@ int main(int argc, char **argv){
             std::cout << "----------------------------------------------------------" << std::endl;
             auto fullName= fmt::format("MC/{0}_{1}.root",filename,localRank);
             if(save_toy) {
+                TCanvas foo;
+                auto dp = dplotter.make2D();
+                auto proj = (TH1F*)dp->ProjectionX("s12");
+                proj->Draw("");
+                foo.SaveAs("plots/proj.png");
                 to_root(data,fullName);
                 return 0;
             }else{
