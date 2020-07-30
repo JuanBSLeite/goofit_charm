@@ -73,7 +73,7 @@ Variable Daughter3_Mass("Daughter3_Mass",d3_MASS);
 const int bins = 400;
 
 //N Bins for eff and bkg scanning
-const int bins_eff_bkg = 400;
+const int bins_eff_bkg = 2000;
 
 //Dalitz Limits
 fptype s12_min = POW2(d1_MASS  + d2_MASS);
@@ -125,8 +125,8 @@ ResonancePdf *loadPWAResonance(const std::string fname = pwa_file, bool polar=tr
 	    }else{
 		emag = e2;
             	ephs = e3;
-		Variable va(fmt::format("pwa_coef_{}_mag", i), emag,0.01,0.,50.);
-            	Variable vp(fmt::format("pwa_coef_{}_phase", i), ephs,0.01,-2.*3.14,+2.*3.14);
+		Variable va(fmt::format("pwa_coef_{}_mag", i), emag,0.01,0.,+50.);
+            	Variable vp(fmt::format("pwa_coef_{}_phase", i), ephs,0.01,-2.*M_PI,+2.*M_PI);
 		pwa_coefs_amp.push_back(va);
             	pwa_coefs_phs.push_back(vp);
 	    } 
@@ -295,7 +295,8 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     
     // Setting fit parameters
     // Variable(name,value) for fixed parameters
-    // Variable(name,value,error,lower_limit,upper_limit) for free parametes
+    // Variable(name,value,error,lower_limit,upper_limit) for free parametes with limits
+    // if you want without limits just do lower_limit=upper_limit=0
 
     // P-Wave
     //omega(782)
@@ -361,10 +362,10 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     Variable nonr_real("nonr_REAL",0.09*cos(torad(181)), 0.01,0,0);
     Variable nonr_imag("nonr_IMAG",0.09*sin(torad(181)), 0.01,0,0);
 
-    //Bose-Einstein
+    //Bose-Einstein - Parameter R from CMS paper
     Variable be_real("be_REAL",0.9,0.01,0,0);
     Variable be_imag("be_IMAG",-2.9,0.01,0,0);
-    Variable be_coef("be_COEF",1.);
+    Variable be_coef("be_RCOEF",1.);
 
     //it is possible to initial variables above with random values in a range
     //e.g. v_omega_real.setRandomValue(-0.0160 - 5*0.0009,-0.0160 + 5*0.0009)
@@ -380,7 +381,7 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
 
     auto f2_1270 = new Resonances::RBW("f2",v_f2_1270_real,v_f2_1270_img,v_f2_1270_Mass,v_f2_1270_Width,2,PAIR_12,true);
 
-    auto f0_980_12 = new Resonances::FLATTE("f0_980",v_f0_980_real,v_f0_980_img,v_f0_980_Mass,
+    auto f0_980 = new Resonances::FLATTE("f0_980",v_f0_980_real,v_f0_980_img,v_f0_980_Mass,
 	v_f0_980_GPP,v_f0_980_GKK,PAIR_12,true);
 
     auto f0_980_RBW = new Resonances::RBW("f0_980_RBW",v_f0_980_real,v_f0_980_img,v_f0_980_Mass,v_f0_980_Width,(unsigned int)0,PAIR_12,true);
@@ -414,7 +415,7 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
 
     //not included
     //vec_resonances.push_back(a0_980);
-    //vec_resonances.push_back(f0_980);
+    vec_resonances.push_back(f0_980);
     //vec_resonances.push_back(f0_Mix);
     //vec_resonances.push_back(f0_1500);
     //vec_resonances.push_back(f0_1370);
@@ -467,7 +468,6 @@ void getData(std::string toyFileName, GooFit::Application &app, DataSet &data, b
             if(j<10) printf("[%d] = (%f , %f)\n",i,s12.getValue(),s13.getValue());
             j++;
             if(!toy  &&  data.getNumEvents()==200000) break; 
-            if(toy  &&  data.getNumEvents()==1000000) break;
         }
     }
 
@@ -683,7 +683,7 @@ void convertToMagPhase(ROOT::Minuit2::FunctionMinimum &min, size_t npar){
 
 	for(int col=0; col<10; col++){
 
-		//if(row!=col){
+		//if(row!=col){// errado
 			mag_error += 2*dfMag_x(real,imag)*dfMag_y(real,imag)*m(row+1,row);
 			phs_error += 2*dfPhs_x(real,imag)*dfPhs_y(real,imag)*m(row+1,row);
 			//printf("cov(%d,%d)=%e \n",row,row+1,m(row+1,row));
@@ -732,7 +732,37 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
     std::ofstream open(output,std::ios_base::app);
     open << "FCN" << "\t" << func_min.Fval() << "\t" << 0 << "\t" << 0 << "\t" << 0 << std::endl;
     open << "Status" << "\t" << func_min.IsValid() << "\t" << 0 << "\t" << 0 << "\t" << 0 << std::endl;
-    open.close();
+	open.close();
+
+	//getting the number of free parameters for covMatrix and chi2
+	size_t npar = 0; 
+	auto param = datapdf.getParams()->Parameters();
+    for(size_t i = 0; i < param.size(); i++){
+        if((!param[i].IsFixed()) || (!param[i].IsConst())){
+            npar++;	
+        }
+    }
+
+	output = fmt::format("Fit/{0}/covMatrix.txt",name.c_str());
+	std::ofstream open2(output);
+    Eigen::MatrixXd m(npar,npar);
+
+    auto covMatrix = func_min.UserState().Covariance().Data();
+    int k = 0;
+
+    for(int i=0; i< 10; i++){
+		for(int j=0; j<10; j++){
+				if(i<=j){
+					m(i,j)=covMatrix[k];
+					m(j,i)=covMatrix[k];
+					k++;
+				}
+					
+		}
+    }
+
+   open2 <<  m << std::endl;
+   open2.close();
 
     //TIP!
     //If you want to free some paramters after previous fit
@@ -742,7 +772,6 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
 
     //Get the value of normalization
     auto norm = signal->normalize() ;
-    auto param = datapdf.getParams()->Parameters();
     
     std::cout << "---------------------------------------------" << std::endl;
     if(func_min.IsValid()){
@@ -779,14 +808,9 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
     dplotter.Plot("s_{#pi^{-} #pi^{+}}","s_{#pi^{-} #pi^{+}}","s_{#pi^{+} #pi^{+}}",fmt::format("Fit/{0}",name.c_str()),*data);
    
     //Calc chi2
-    size_t npar = 0; //number of free parameters
-    for(size_t i = 0; i < param.size(); i++){
-        if((!param[i].IsFixed()) || (!param[i].IsConst())){
-            npar++;	
-        }
-    }
     dplotter.chi2(npar,"Ds3pi_bins.txt",0.05,1.95,0.3,3.4,*data,fmt::format("Fit/{0}",name.c_str())); 
 
+    
     //saving s-wave qmpiwa
     size_t N = HH_bin_limits.size();
     double amp[N];
@@ -858,6 +882,12 @@ int main(int argc, char **argv){
     auto genfit = app.add_subcommand("genfit","perform genfit");
     auto NormStudies = app.add_subcommand("NormStudies","perform norm studies");
 
+	size_t nFits = 10;
+	auto fitsys = app.add_subcommand("fitsys","perform fits with random initial parameters.");
+	fitsys->add_option("n,--nFits",nFits,"number of fits to perform");
+    fitsys->add_option("f,--file",input_data_name,"name_of_file.root");
+    fitsys->add_option("-t,--isToy", is_toy, "Get toyData for fit") ;
+
     app.require_subcommand();
 
     GOOFIT_PARSE(app);
@@ -880,7 +910,11 @@ int main(int argc, char **argv){
     // Make the NormStudies directory if it does not exist
     command = "mkdir -p NormStudies";
     if(system(command.c_str()) != 0)
-        throw GooFit::GeneralError("Making `plots` directory failed");
+        throw GooFit::GeneralError("Making `NormStudies` directory failed");
+
+    command = "export CUDA_VISIBLE_DEVICES=1";
+    if(system(command.c_str()) != 0)
+        throw GooFit::GeneralError("Set GPU 1 faliled");
 
     Observable s12("s12", s12_min, s12_max);
     Observable s13("s13", s13_min, s13_max);
@@ -965,6 +999,20 @@ int main(int argc, char **argv){
 		std::cout << "------------------------------------------" << std::endl;
 		auto sample_name = fmt::format("Sample_{0}",i);	
 		auto output_signal = genFit(prodpdf,signal, data[i], sample_name);
+	}
+    }
+
+    if(*fitsys){
+	
+	UnbinnedDataSet data({s12, s13, eventNumber});
+	getData(input_data_name, app, data,is_toy);
+
+	for(int i =0; i<nFits; i++){	
+		std::cout << "------------------------------------------" << std::endl;
+		std::cout << "Fitting Sample --> " << i		          << std::endl; 
+		std::cout << "------------------------------------------" << std::endl;
+		auto sample_name = fmt::format("Fit_{0}",i);	
+		auto output_signal = genFit(prodpdf,signal, &data, sample_name);
 	}
     }
 
