@@ -210,7 +210,8 @@ void pts(int slices,double mass,double err,double sigma){
     //printf("m12_min = %f e m12_max = %f \n",m12_min,m12_max);
 
     ofstream wr("files/PWACOEFS.txt");
-    double par[8] = {1.,0.,0.977,0.1,0.75*cos(torad(198)),0.75*sin(torad(198)),1.434,0.172};
+    //double par[8] = {1.,0.,0.977,0.1,0.75*cos(torad(198)),0.75*sin(torad(198)),1.434,0.172};
+	double par[9] = {1.,0.,0.977,0.09,0.02,-0.8357,-0.5730,1.434,0.172}; 
     //double par[13] = {1.,0.,0.965,0.165,0.693,-0.0924,-0.1413,1.505,0.109,-0.1641,-0.1018,1.434,0.172}; 
     //double par[8] = {1.,0.,0.977,0.04,0.75*cos(torad(198)),0.75*sin(torad(198)),1.434,0.172};
     //double par[9] = {-1.884286,-4.594298,0.965,0.165,0.694,-0.026994,1.889315,1.434,0.172};
@@ -241,10 +242,10 @@ void pts(int slices,double mass,double err,double sigma){
         } */
 
 		//TComplex v = (flatte(&s,par) + plainBW(&s,&par[5]) + plainBW(&s,&par[9]));	
-		TComplex v = (plainBW(&s,par)+ plainBW(&s,&par[4]));
-		//TComplex v = (flatte(&s,par)+ plainBW(&s,&par[5]));
-		bin_amp_real = v.Re();
-    	bin_amp_img = v.Im();
+		//TComplex v = (plainBW(&s,par)+ plainBW(&s,&par[4]));
+		TComplex v = (flatte(&s,par)+ plainBW(&s,&par[5]));
+		bin_amp_real = v.Rho();
+    	bin_amp_img = v.Theta();
 
     		//printf("%d : %lg = (%lg,%lg) \n ",i,s,bin_amp_real,bin_amp_img);
     	wr << s << " " << bin_amp_real << " "<< bin_amp_img << endl;
@@ -260,7 +261,7 @@ void babarBinning(){
     ifstream rd("files/PWACOEFS_BaBar_more_pts.txt");
     ofstream wt("files/PWACOEFS.txt");
 
-    double par[9] = {1.,0.,0.963,0.084,0.23,-0.4623,-0.6269,1.472,0.152};  
+    double par[9] = {1.,0.,0.977,0.09,0.02,-0.8357,-0.5730,1.434,0.172};  
     double s , m , p;
 
     while(rd >> s >> m >> p){
@@ -277,8 +278,8 @@ void babarBinning(){
 }
 
 void PWACoefs(int slices,double mass,double err,double sigma){
-    //pts(slices,mass,err,sigma);
-    babarBinning();
+    pts(slices,mass,err,sigma);
+    //babarBinning();
     TCanvas *foo = new TCanvas("foo","",900,600);
 
     TGraphErrors *a = new TGraphErrors("Fit/s_wave_fitted.txt","%lg %lg %*lg %lg %lg %*lg");
