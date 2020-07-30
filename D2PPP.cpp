@@ -14,10 +14,11 @@
 #include <TStyle.h>
 #include <TH2Poly.h>
 #include <TGraphErrors.h>
-//Minuit
 
+//Minuit
 #include <Minuit2/MnStrategy.h>
 #include <Minuit2/Minuit2Minimizer.h>
+
 // System stuff
 #include <CLI/Timer.hpp>
 #include <fstream>
@@ -72,7 +73,7 @@ Variable Daughter3_Mass("Daughter3_Mass",d3_MASS);
 const int bins = 400;
 
 //N Bins for eff and bkg scanning
-const int bins_eff_bkg = 2000;
+const int bins_eff_bkg = 400;
 
 //Dalitz Limits
 fptype s12_min = POW2(d1_MASS  + d2_MASS);
@@ -94,9 +95,6 @@ vector<Variable> pwa_coefs_amp; // mag(real)_coefs
 vector<Variable> pwa_coefs_phs; // phase(imag)_coefs
 const string pwa_file = "files/PWACOEFS_BaBar_51pts.txt"; // input points for MIPWA
 
-//Declaring Functions 
-//void saveParameters(std::string file, const std::vector<Variable> &param,   bool isValid,  double fcn,  std::vector<std::vector<fptype>> ff );
-    
 ResonancePdf *loadPWAResonance(const std::string fname = pwa_file, bool polar=true) {
 //load the MIPWA resonance function
 
@@ -119,7 +117,7 @@ ResonancePdf *loadPWAResonance(const std::string fname = pwa_file, bool polar=tr
             if(!polar){
 	    	emag = e2*cos(e3);
             	ephs = e2*sin(e3);
-		//Instatiation of fit parameters for MIPWA
+		//Instantiation of fit parameters for MIPWA
 		Variable va(fmt::format("pwa_coef_{}_real", i), emag,0.01,-100.0,+100.0);
             	Variable vp(fmt::format("pwa_coef_{}_imag", i), ephs,0.01,-100.0,+100.0);
 		pwa_coefs_amp.push_back(va);
@@ -127,8 +125,8 @@ ResonancePdf *loadPWAResonance(const std::string fname = pwa_file, bool polar=tr
 	    }else{
 		emag = e2;
             	ephs = e3;
-		Variable va(fmt::format("pwa_coef_{}_mag", i), emag,0.01,0.,+100.0);
-            	Variable vp(fmt::format("pwa_coef_{}_phase", i), ephs,0.01,-2.*M_PI,+2.*M_PI);
+		Variable va(fmt::format("pwa_coef_{}_mag", i), emag,0.01,0.,50.);
+            	Variable vp(fmt::format("pwa_coef_{}_phase", i), ephs,0.01,-2.*3.14,+2.*3.14);
 		pwa_coefs_amp.push_back(va);
             	pwa_coefs_phs.push_back(vp);
 	    } 
@@ -188,6 +186,7 @@ GooPdf* makeHistogramPdf(std::string efffile, std::string effhist, Observable s1
 
     printf("Hist avaliated in %d events inside dalitz \n",n);
     Variable *effSmoothing = new Variable(name.c_str(), 0.0);
+    effSmoothing->setBlind(0.0);
     auto ret = new SmoothHistogramPdf("efficiency", binEffData, *effSmoothing);
     return ret;
 
@@ -371,8 +370,6 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     //e.g. v_omega_real.setRandomValue(-0.0160 - 5*0.0009,-0.0160 + 5*0.0009)
    
     //Instatiation of resonances
-  
-    
     auto omega = new Resonances::RBW("omega",v_omega_real,v_omega_img,v_omega_Mass,v_omega_Width,1,PAIR_12,true);
     
     auto rho770 = new Resonances::RBW("rho770",v_rho770_real,v_rho770_img,v_rho770_Mass,v_rho770_Width,1,PAIR_12,true);
@@ -413,7 +410,7 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     vec_resonances.push_back(rho1700);
     vec_resonances.push_back(f2_1270);
     vec_resonances.push_back(BEC);
-    vec_resonances.push_back(MIPWA);
+    //vec_resonances.push_back(MIPWA);
 
     //not included
     //vec_resonances.push_back(a0_980);
@@ -430,37 +427,6 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
    
     return new DalitzPlotPdf("signalPDF", s12, s13, eventNumber, dtoppp, eff);
 }
-
-
-
-void saveParameters(const std::vector<ROOT::Minuit2::MinuitParameter> &param, bool status, double fcn,double norm, std::string file){
-
-    std::vector<std::string> v1;
-    std::vector<fptype> v2;
-    std::vector<fptype> v3;
-
-    std::ofstream output_file(file.c_str(),std::ofstream::out);
-
-    for(size_t i = 0 ; i < param.size() ; i++){
-	        v1.push_back(param[i].GetName());
-            v2.push_back(param[i].Value());
-            v3.push_back(param[i].Error());
-     }
-
-
-    for(size_t i = 0; i < v1.size(); i++) {
-        output_file << v1[i] << "\t" << std::fixed << std::setprecision(4) << v2[i] << '\t' << v3[i] << std::endl;
-    }
-
-
-   output_file << "Min_FCN \t" << std::fixed << std::setprecision(4) << fcn << '\t' << 0. << std:: endl;
-   output_file << "Norm \t" << std::fixed << std::setprecision(4) << norm << '\t' << 0. << std:: endl;
-   output_file << "Status \t" << status << '\t' << 0. << std::endl;
-
-
-   output_file.close();
-}
-
 
 void getData(std::string toyFileName, GooFit::Application &app, DataSet &data, bool toy) {
     //load data in a GooFit::dataset
@@ -592,6 +558,7 @@ std::vector<std::vector<fptype>> fractions(DalitzPlotPdf* signal,UnbinnedDataSet
         s12.setValue(_s12);
         s13.setValue(_s13);
         flatMC->addEvent();
+	
     }
 
     signal->setParameterConstantness(true); 
@@ -613,20 +580,23 @@ int genFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *data, std::s
     signal->setDataSize(data->getNumEvents());
     
     FitManager datapdf(totalPdf);
-    datapdf.setVerbosity(2);
-    datapdf.setMaxCalls(200000);
+    datapdf.setVerbosity(0);
+    datapdf.setMaxCalls(20000);
     datapdf.setTolerance(0.1);
     auto func_min = datapdf.fit();
- 
-    auto param = datapdf.getParams()->Parameters();
     
-    auto output = fmt::format("GenFit/fit_parameters_{0}.txt",rank);
-    auto norm = signal->normalize() ;
+    auto output = fmt::format("GenFit/{0}_fitResult.txt",rank);
+    writeToFile(signal, output.c_str());
 
-    saveParameters(param, func_min.IsValid(), func_min.Fval(),norm, output);	
-    
+    std::ofstream open(output,std::ios_base::app);
+    open << "FCN" << "\t" << func_min.Fval() << "\t" << 0 << "\t" << 0 << "\t" << 0 << std::endl;
+    open << "Status" << "\t" << func_min.IsValid() << "\t" << 0 << "\t" << 0 << "\t" << 0 << std::endl;
+    open.close();
+
+    auto norm = signal->normalize() ;
     std::cout << "---------------------------------------------" << std::endl;
     std::cout << "Sample " << rank << " fitted ! "		         << std::endl;
+    std::cout << "Status " << func_min.IsValid() 		<< std::endl;
     std::cout << "nEvents --> " << data->getNumEvents()          << std::endl;
     std::cout << "minFCN --> "   << func_min.Fval()              << std::endl;
     std::cout << "AmpNorm --> "   << norm       << std::endl;
@@ -759,6 +729,11 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
     //save external state user parameters after fit
     writeToFile(signal, output.c_str());
 
+    std::ofstream open(output,std::ios_base::app);
+    open << "FCN" << "\t" << func_min.Fval() << "\t" << 0 << "\t" << 0 << "\t" << 0 << std::endl;
+    open << "Status" << "\t" << func_min.IsValid() << "\t" << 0 << "\t" << 0 << "\t" << 0 << std::endl;
+    open.close();
+
     //TIP!
     //If you want to free some paramters after previous fit
     //signalpdf->getParameterByName("parameter")->setFixed(false)
@@ -768,9 +743,6 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
     //Get the value of normalization
     auto norm = signal->normalize() ;
     auto param = datapdf.getParams()->Parameters();
-    
-    //auto output = name;
-    //saveParameters(param, func_min.IsValid(), func_min.Fval(),norm, output);	
     
     std::cout << "---------------------------------------------" << std::endl;
     if(func_min.IsValid()){
@@ -796,7 +768,7 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
             Observable eventNumber = obs.at(2);
             
             UnbinnedDataSet toyMC({s12,s13,eventNumber});
-            dplotter.fillDataSetMC(toyMC,10000000);
+            dplotter.fillDataSetMC(toyMC,2000000);
             to_root(toyMC,fmt::format("Fit/{0}/toyMC.root",name.c_str()));
         }
 
@@ -813,7 +785,7 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
             npar++;	
         }
     }
-    dplotter.chi2(npar,"Ds3pi_bins.txt",0.05,1.95,0.3,3.4,*data); 
+    dplotter.chi2(npar,"Ds3pi_bins.txt",0.05,1.95,0.3,3.4,*data,fmt::format("Fit/{0}",name.c_str())); 
 
     //saving s-wave qmpiwa
     size_t N = HH_bin_limits.size();
@@ -981,14 +953,19 @@ int main(int argc, char **argv){
     }
         
             
-    if(*genfit){	
-	auto fullName= fmt::format("GenFit/{0}.root",input_data_name);
-	UnbinnedDataSet data({s12, s13, eventNumber});
-        std::cout << "------------------------------------------" << std::endl;
-        std::cout << "Reading file --> " << fullName              << std::endl; 
-        std::cout << "------------------------------------------" << std::endl;
-        getData(fullName, app, data,true);	
-        auto output_signal = genFit(prodpdf,signal, &data, input_data_name);
+    if(*genfit){
+	std::vector<UnbinnedDataSet *> data(100);
+	writeToFile(signal, "GenFit/InitialParameters.txt");
+	for(int i =0; i<100; i++){
+		data[i] = new UnbinnedDataSet({s12, s13, eventNumber});
+		DalitzPlotter dplotter{prodpdf, signal};
+		dplotter.fillDataSetMC(*data[i], 100000);	
+		std::cout << "------------------------------------------" << std::endl;
+		std::cout << "Fitting Sample --> " << i		          << std::endl; 
+		std::cout << "------------------------------------------" << std::endl;
+		auto sample_name = fmt::format("Sample_{0}",i);	
+		auto output_signal = genFit(prodpdf,signal, data[i], sample_name);
+	}
     }
 
             
