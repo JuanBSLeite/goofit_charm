@@ -411,11 +411,11 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     vec_resonances.push_back(rho1700);
     vec_resonances.push_back(f2_1270);
     vec_resonances.push_back(BEC);
-    //vec_resonances.push_back(MIPWA);
+    vec_resonances.push_back(MIPWA);
 
     //not included
     //vec_resonances.push_back(a0_980);
-    vec_resonances.push_back(f0_980);
+    //vec_resonances.push_back(f0_980);
     //vec_resonances.push_back(f0_Mix);
     //vec_resonances.push_back(f0_1500);
     //vec_resonances.push_back(f0_1370);
@@ -867,25 +867,28 @@ int main(int argc, char **argv){
     bool save_toy = false;
     bool is_toy = false;
     auto fit = app.add_subcommand("fit","fit data");
-    fit->add_option("f,--file",input_data_name,"name_of_file.root");
+    fit->add_option("-f,--file",input_data_name,"name_of_file.root");
     fit->add_option("-t,--isToy", is_toy, "Get toyData for fit") ;
-    fit->add_option("s,--saveToy",save_toy,"save toy in root file");
-    fit->add_option("n,--fitName",fit_name,"name of this fit(useful to save results)")->required(true);
+    fit->add_option("-s,--saveToy",save_toy,"save toy in root file");
+    fit->add_option("-n,--fitName",fit_name,"name of this fit(useful to save results)")->required(true);
    
     size_t Nevents=1000000;
     std::string toyName = "MC.root";
     auto makeToy = app.add_subcommand("makeToy","make a toy");
-    makeToy->add_option("e,--nevents",Nevents,"number of events");
-    makeToy->add_option("n,--name",toyName,"output_toy_name.root");
-    makeToy->add_option("s,--saveToy",save_toy,"save toy in root file");	
+    makeToy->add_option("-e,--nevents",Nevents,"number of events");
+    makeToy->add_option("-n,--name",toyName,"output_toy_name.root");
+    makeToy->add_option("-s,--saveToy",save_toy,"save toy in root file");	
     
+	size_t sampleNumber = 0;
     auto genfit = app.add_subcommand("genfit","perform genfit");
+	genfit->add_option("-n,--sampleNumber",sampleNumber,"sample number");
+
     auto NormStudies = app.add_subcommand("NormStudies","perform norm studies");
 
-	size_t nFits = 10;
+	size_t fitNumber = 0;
 	auto fitsys = app.add_subcommand("fitsys","perform fits with random initial parameters.");
-	fitsys->add_option("n,--nFits",nFits,"number of fits to perform");
-    fitsys->add_option("f,--file",input_data_name,"name_of_file.root");
+	fitsys->add_option("-n,--fitNumber",fitNumber,"number of fits to perform");
+    fitsys->add_option("-f,--file",input_data_name,"name_of_file.root");
     fitsys->add_option("-t,--isToy", is_toy, "Get toyData for fit") ;
 
     app.require_subcommand();
@@ -988,38 +991,31 @@ int main(int argc, char **argv){
         
             
     if(*genfit){
-	std::vector<UnbinnedDataSet *> data(100);
-	writeToFile(signal, "GenFit/InitialParameters.txt");
-	for(int i =0; i<100; i++){
-		data[i] = new UnbinnedDataSet({s12, s13, eventNumber});
+		writeToFile(signal, "GenFit/InitialParameters.txt");
+		UnbinnedDataSet data({s12, s13, eventNumber});
 		DalitzPlotter dplotter{prodpdf, signal};
-		dplotter.fillDataSetMC(*data[i], 100000);	
+		dplotter.fillDataSetMC(data, 100000);	
 		std::cout << "------------------------------------------" << std::endl;
-		std::cout << "Fitting Sample --> " << i		          << std::endl; 
+		std::cout << "Fitting Sample --> " << sampleNumber		          << std::endl; 
 		std::cout << "------------------------------------------" << std::endl;
-		auto sample_name = fmt::format("Sample_{0}",i);	
-		auto output_signal = genFit(prodpdf,signal, data[i], sample_name);
-	}
+		auto sample_name = fmt::format("Sample_{0}",sampleNumber);	
+		auto output_signal = genFit(prodpdf,signal, &data, sample_name);
     }
 
     if(*fitsys){
-	
-	UnbinnedDataSet data({s12, s13, eventNumber});
-	getData(input_data_name, app, data,is_toy);
-
-	for(int i =0; i<nFits; i++){	
+		UnbinnedDataSet data({s12, s13, eventNumber});
+		getData(input_data_name, app, data,is_toy);	
 		std::cout << "------------------------------------------" << std::endl;
-		std::cout << "Fitting Sample --> " << i		          << std::endl; 
+		std::cout << "Fit Number --> " << fitNumber	          	  << std::endl; 
 		std::cout << "------------------------------------------" << std::endl;
-		auto sample_name = fmt::format("Fit_{0}",i);	
+		auto sample_name = fmt::format("Fit_{0}",fitNumber);	
 		auto output_signal = genFit(prodpdf,signal, &data, sample_name);
-	}
     }
 
             
     if(*NormStudies){
         auto fullName= fmt::format("{0}",input_data_name);
-	UnbinnedDataSet data({s12, s13, eventNumber});
+		UnbinnedDataSet data({s12, s13, eventNumber});
         std::cout << "------------------------------------------" << std::endl;
         std::cout << "Reading file --> " << fullName              << std::endl; 
         std::cout << "------------------------------------------" << std::endl;
