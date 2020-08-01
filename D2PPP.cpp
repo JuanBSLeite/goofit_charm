@@ -605,6 +605,28 @@ int genFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *data, std::s
     return datapdf;
 }
 
+void removeRow(Eigen::MatrixXd& matrix, unsigned int rowToRemove)
+{
+    unsigned int numRows = matrix.rows()-1;
+    unsigned int numCols = matrix.cols();
+
+    if( rowToRemove < numRows )
+        matrix.block(rowToRemove,0,numRows-rowToRemove,numCols) = matrix.bottomRows(numRows-rowToRemove);
+
+    matrix.conservativeResize(numRows,numCols);
+}
+
+void removeColumn(Eigen::MatrixXd& matrix, unsigned int colToRemove)
+{
+    unsigned int numRows = matrix.rows();
+    unsigned int numCols = matrix.cols()-1;
+
+    if( colToRemove < numCols )
+        matrix.block(0,colToRemove,numRows,numCols-colToRemove) = matrix.rightCols(numCols-colToRemove);
+
+    matrix.conservativeResize(numRows,numCols);
+}
+
 //convert real,imag fit result to mag,phase
 //still implementing
 double dfMag_x(double x, double y){
@@ -636,8 +658,9 @@ void convertToMagPhase(ROOT::Minuit2::FunctionMinimum &min, size_t npar){
 	for(int j=0; j<10; j++){
 			if(i<=j){
 				m(i,j)=covMatrix[k];
-				m(j,i)=covMatrix[k];
 				k++;
+			}else{
+				m(i,j)=0.;
 			}
 				
 	}
@@ -727,7 +750,8 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
 
     auto output = fmt::format("Fit/{0}/fit_result.txt",name.c_str());
     //save external state user parameters after fit
-    writeToFile(signal, output.c_str());
+	//here include Const and Free parameters
+    writeToFile(totalPdf, output.c_str());
 
     std::ofstream open(output,std::ios_base::app);
     open << "FCN" << "\t" << func_min.Fval() << "\t" << 0 << "\t" << 0 << "\t" << 0 << std::endl;
@@ -738,29 +762,28 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
 	size_t npar = 0; 
 	auto param = datapdf.getParams()->Parameters();
     for(size_t i = 0; i < param.size(); i++){
-        if((!param[i].IsFixed()) || (!param[i].IsConst())){
+        if(!param[i].IsConst()){
             npar++;	
         }
     }
 
+	//User CovMatrix (include rows and cols of non free parameters)
 	output = fmt::format("Fit/{0}/covMatrix.txt",name.c_str());
 	std::ofstream open2(output);
-    Eigen::MatrixXd m(npar,npar);
-
     auto covMatrix = func_min.UserState().Covariance().Data();
-    int k = 0;
+    Eigen::MatrixXd m(param.size(),param.size());
+	m = Eigen::Map<Eigen::MatrixXd>(covMatrix.data(),param.size(),param.size());
 
-    for(int i=0; i< 10; i++){
-		for(int j=0; j<10; j++){
-				if(i<=j){
-					m(i,j)=covMatrix[k];
-					m(j,i)=covMatrix[k];
-					k++;
-				}
-					
+	//we don't want non free parameters rows and columns, so we must to remove them
+	for(int i =0; i< param.size(); i++){
+		if(param[i].IsConst()){
+			removeRow(m,i);
+			removeColumn(m,i);
 		}
-    }
+	}
 
+   //saving sub CovMatrix in a file
+   std::cout.precision(5);
    open2 <<  m << std::endl;
    open2.close();
 
@@ -773,6 +796,7 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
     //Get the value of normalization
     auto norm = signal->normalize() ;
     
+	//Status
     std::cout << "---------------------------------------------" << std::endl;
     if(func_min.IsValid()){
         std::cout << "Sample --> fitted successfully! "		     << std::endl;
@@ -786,7 +810,7 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
     std::cout << fmt::format("Output of fit saved in Fit folder Fit/{0}",name)  << std::endl;
     std::cout << "---------------------------------------------" << std::endl; 
 
-    //Save a toy of the model
+    //Save a toy of the model if you want
     DalitzPlotter dplotter{totalPdf, signal};
     {
         if(save_toy){
@@ -968,21 +992,11 @@ int main(int argc, char **argv){
         auto flatMC = new UnbinnedDataSet({s12,s13,eventNumber});
         auto frac = fractions(output_signal,flatMC);
         ofstream wt(fmt::format("Fit/{0}/fractions.txt",fit_name));
-        std::cout << "Fit Fractions Interference (%)" << '\n';
-	Eigen::MatrixXd m(frac[0].size(),frac[0].size());
-
-        for(size_t i=0; i<frac[0].size();i++)
-        {
-            for(size_t j=0; j<frac[0].size(); j++)
-            {
-		if(i<=j){
-               		m(i,j) = frac[i][j]*100;
-		}else{
-			m(i,j) = 0.;
-		}
-			
-            }
-        }
+        std::cout << "Fit Fractions Interference" << '\n';
+		auto nres = signal->getDecayInfo().resonances.size();
+		Eigen::MatrixXd m(nres,nres);
+		for(int i=0; i < nres; i++)
+			m.row(i) = Eigen::Map<Eigen::VectorXd>(&frac[i][0],nres);
 
 	std::cout << m << std::endl;
 	wt << m << std::endl;
