@@ -116,7 +116,7 @@ ResonancePdf *loadPWAResonance(const std::string fname = pwa_file, bool polar=tr
 
             if(!polar){
 	    	emag = e2*cos(e3);
-            	ephs = e2*sin(e3);
+            ephs = e2*sin(e3);
 		//Instantiation of fit parameters for MIPWA
 		Variable va(fmt::format("pwa_coef_{}_real", i), emag,0.01,-100.0,+100.0);
             	Variable vp(fmt::format("pwa_coef_{}_imag", i), ephs,0.01,-100.0,+100.0);
@@ -400,7 +400,7 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     auto BEC   = new Resonances::BoseEinstein("be",be_real,be_imag,be_coef);
 
     //MIPWA
-    ResonancePdf *MIPWA = loadPWAResonance(pwa_file, true);
+    ResonancePdf *MIPWA = loadPWAResonance(pwa_file, false);
 
     //If you want include a resonance in your model, just push into the vector 'vec_resonances'
     std::vector<ResonancePdf *> vec_resonances;
@@ -645,48 +645,27 @@ double dfPhs_y(double x, double y){
         return x/(x*x + y*y);
 }
 
-void convertToMagPhase(ROOT::Minuit2::FunctionMinimum &min, size_t npar){
+void convertToMagPhase(Eigen::MatrixXd &m,std::vector<ROOT::Minuit2::MinuitParameter> &params,size_t totalUserPar, size_t totalFitPar,std::string name){
 
-    std::cout << "\n External Covariance Matrix" << std::endl;
-    Eigen::MatrixXd m(10,10);
-    size_t N = 10*(10+1)/2; 
-
-    auto covMatrix = min.UserState().Covariance().Data();
-    int k = 0;
-
-    for(int i=0; i< 10; i++){
-	for(int j=0; j<10; j++){
-			if(i<=j){
-				m(i,j)=covMatrix[k];
-				k++;
-			}else{
-				m(i,j)=0.;
-			}
-				
-	}
-    }
-
-   std::cout<< m << std::endl;
-
-   //this vector include free and fixed parameters, we must get only free ones
-   auto vec_with_all_parameters =  min.UserParameters().Parameters() ;
+   auto output = fmt::format("Fit/{0}/ConvertedToMagPhaseResults.txt",name.c_str());
+   std::ofstream wt(output);
    
    std::vector<double> vec_values;
    std::vector<double> vec_error;
 
-   for(int i=0; i<28; i++){
+   for(int i=0; i<totalUserPar; i++){
 
-	if(vec_with_all_parameters[i].IsFixed() || vec_with_all_parameters[i].IsConst()){
+	if(params[i].IsConst()){
 		continue;
 	}else{
-		vec_values.push_back(vec_with_all_parameters[i].Value());
-		vec_error.push_back(vec_with_all_parameters[i].Error());
+		vec_values.push_back(params[i].Value());
+		vec_error.push_back(params[i].Error());
 	}
 
    }
 
 
-   for(int row=0; row<10; row+=2){
+   for(int row=0; row<totalFitPar; row+=2){
 	double mag = 0;
 	double mag_error = 0;
 	double phs = 0;
@@ -704,27 +683,22 @@ void convertToMagPhase(ROOT::Minuit2::FunctionMinimum &min, size_t npar){
 	phs_error = POW2(dfPhs_x(real,imag)*real_error) + POW2(dfPhs_y(real,imag)*imag_error);
 
 
-	for(int col=0; col<10; col++){
+	//for(int col=0; col<totalFitPar; col++){
 
-		//if(row!=col){// errado
 			mag_error += 2*dfMag_x(real,imag)*dfMag_y(real,imag)*m(row+1,row);
 			phs_error += 2*dfPhs_x(real,imag)*dfPhs_y(real,imag)*m(row+1,row);
-			//printf("cov(%d,%d)=%e \n",row,row+1,m(row+1,row));
-			//printf("dfMag = (%e , %e) \n",dfMag_x(real,imag),dfMag_y(real,imag));
-			//printf("dfPhs = (%e , %e) \n",dfPhs_x(real,imag),dfPhs_y(real,imag));
-			//printf("mag_error_cov = %e \n",dfMag_x(real,imag)*dfMag_y(real,imag)*m(row+1,row));
-			//printf("phs_error_cov = %e \n",dfPhs_x(real,imag)*dfPhs_y(real,imag)*m(row+1,row));
-			//printf("real=%e imag=%e \n",real,imag);			
-			//printf("real_e=%e imag_e=%e \n",real_error,imag_error);
-		//}
-	}
+			
+	//}
 
 	mag_error = sqrt(abs(mag_error));
 	phs_error = sqrt(abs(phs_error));
 
-	printf(" par[%d] = ( %f +/- %f , %f +/- %f ) \n", row/2, mag,mag_error, phs*180./M_PI, phs_error*180./M_PI);
+	wt << fmt::format("par[{0}] = ( {1} +/- {2} , {3} +/- {4} )",row/2,mag,mag_error,phs*180./M_PI,phs_error*180./M_PI) << std::endl;
+	//printf(" par[%d] = ( %f +/- %f , %f +/- %f ) \n", row/2, mag,mag_error, phs*180./M_PI, phs_error*180./M_PI);
 		
    }
+
+	wt.close();
 
 }
 
@@ -744,9 +718,6 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
 
     //run the fit
     auto func_min = datapdf.fit();
-
-    //not working properly yet
-    //convertToMagPhase(func_min,10);
 
     auto output = fmt::format("Fit/{0}/fit_result.txt",name.c_str());
     //save external state user parameters after fit
@@ -772,7 +743,17 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
 	std::ofstream open2(output);
     auto covMatrix = func_min.UserState().Covariance().Data();
     Eigen::MatrixXd m(param.size(),param.size());
-	m = Eigen::Map<Eigen::MatrixXd>(covMatrix.data(),param.size(),param.size());
+
+	//std::cout << covMatrix[1 + 0*(0+1)/2] << '\t' << covMatrix[0 + 1*(1+1)/2] << std::endl;
+	for(int i=0; i<param.size(); i++){
+		for(int j=0; j<param.size(); j++){
+			if(i>j){
+				m(i,j) = covMatrix[j + i*(i+1)/2];
+			}else{
+				m(i,j) = covMatrix[i + j*(j+1)/2];
+			}
+		}
+	}
 
 	//we don't want non free parameters rows and columns, so we must to remove them
 	for(int i =0; i< param.size(); i++){
@@ -783,9 +764,12 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
 	}
 
    //saving sub CovMatrix in a file
-   std::cout.precision(5);
+   open2.precision(5);
    open2 <<  m << std::endl;
    open2.close();
+
+   //not working properly yet
+   convertToMagPhase(m,param,param.size(),npar,name);
 
     //TIP!
     //If you want to free some paramters after previous fit
