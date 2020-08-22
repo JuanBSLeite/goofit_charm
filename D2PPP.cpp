@@ -73,7 +73,7 @@ Variable Daughter3_Mass("Daughter3_Mass",d3_MASS);
 const int bins = 400;
 
 //N Bins for eff and bkg scanning
-const int bins_eff_bkg = 2000;
+const int bins_eff_bkg = bins;
 
 //Dalitz Limits
 fptype s12_min = POW2(d1_MASS  + d2_MASS);
@@ -93,7 +93,7 @@ EventNumber eventNumber("eventNumber");
 vector<fptype> HH_bin_limits; // bins over s_pipi spectrum
 vector<Variable> pwa_coefs_amp; // mag(real)_coefs
 vector<Variable> pwa_coefs_phs; // phase(imag)_coefs
-const string pwa_file = "files/PWACOEFS_BaBar_51pts.txt"; // input points for MIPWA
+const string pwa_file = "files/PWACOEFS.txt"; // input points for MIPWA
 
 ResonancePdf *loadPWAResonance(const std::string fname = pwa_file, bool polar=true) {
 //load the MIPWA resonance function
@@ -126,7 +126,7 @@ ResonancePdf *loadPWAResonance(const std::string fname = pwa_file, bool polar=tr
 		emag = e2;
             	ephs = e3;
 		Variable va(fmt::format("pwa_coef_{}_mag", i), emag,0.01,0.,+50.);
-            	Variable vp(fmt::format("pwa_coef_{}_phase", i), ephs,0.01,-2.*M_PI,+2.*M_PI);
+            	Variable vp(fmt::format("pwa_coef_{}_phase", i), ephs,0.01,0,0);//-2.*M_PI,+2.*M_PI);
 		pwa_coefs_amp.push_back(va);
             	pwa_coefs_phs.push_back(vp);
 	    } 
@@ -272,20 +272,20 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     //from PDG
     double omega_MASS   = 0.78265;
     double omega_WIDTH  = 0.00849;
-    double omega_amp    = 0.0073;
-    double omega_img  = -0.0068;
+    double omega_amp    = -0.0140856;
+    double omega_img  = 0.00292373;
 
     //From PDG and BABAR 
     double rho770_MASS   = 0.77549;
     double rho770_WIDTH  = 0.1491;
-    double rho770_amp    = 0.19*cos(1.1);
-    double rho770_img  = 0.19*sin(1.1);
+    double rho770_amp    = -0.0212049;//10.19*cos(1.1);
+    double rho770_img  =  0.129617;//0.19*sin(1.1);
 
     //From PDG and BABAR 
     double rho1450_MASS   = 1.465 ;
     double rho1450_WIDTH  = 0.4  ;
-    double rho1450_amp    = 1.2*cos(4.1);
-    double rho1450_img  = 1.2*sin(4.1);
+    double rho1450_amp    = 0.0314475;//1.2*cos(4.1);
+    double rho1450_img  =  -1.19442;//1.2*sin(4.1);
 
     //From PDG - Ref resonance
     double f2_1270_MASS     = 1.2751;
@@ -320,8 +320,8 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     //rho(1700)
     Variable v_rho1700_Mass("rho1700_MASS",1.720);
     Variable v_rho1700_Width("rho1700_WIDTH",0.25);
-    Variable v_rho1700_real("rho1700_REAL",1.,0.01,0,0);
-    Variable v_rho1700_img("rho1700_IMAG",0.,0.01,0,0);
+    Variable v_rho1700_real("rho1700_REAL",0.348083,0.01,0,0);
+    Variable v_rho1700_img("rho1700_IMAG",-1.59008,0.01,0,0);
 
 
     //D-wave
@@ -359,13 +359,13 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     Variable v_f0_1500_img("f0_1500_IMAG",f0_1500_img, 0.01, 0,0);
 
     //NR
-    Variable nonr_real("nonr_REAL",0.09*cos(torad(181)), 0.01,0,0);
-    Variable nonr_imag("nonr_IMAG",0.09*sin(torad(181)), 0.01,0,0);
+    Variable nonr_real("nonr_REAL",1./*0.09*cos(torad(181))*/, 0.01,0,0);
+    Variable nonr_imag("nonr_IMAG",0./*0.09*sin(torad(181))*/, 0.01,0,0);
 
     //Bose-Einstein - Parameter R from CMS paper
-    Variable be_real("be_REAL",0.9,0.01,0,0);
-    Variable be_imag("be_IMAG",-2.9,0.01,0,0);
-    Variable be_coef("be_RCOEF",1.);
+    Variable be_real("be_REAL",0.0/*0.9*/,0.01,0,0);
+    Variable be_imag("be_IMAG",0.0/*-2.9*/,0.01,0,0);
+    Variable be_coef("be_RCOEF",1.0);
 
     //it is possible to initial variables above with random values in a range
     //e.g. v_omega_real.setRandomValue(-0.0160 - 5*0.0009,-0.0160 + 5*0.0009)
@@ -400,7 +400,7 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     auto BEC   = new Resonances::BoseEinstein("be",be_real,be_imag,be_coef);
 
     //MIPWA
-    ResonancePdf *MIPWA = loadPWAResonance(pwa_file, false);
+    ResonancePdf *MIPWA = loadPWAResonance(pwa_file, true);
 
     //If you want include a resonance in your model, just push into the vector 'vec_resonances'
     std::vector<ResonancePdf *> vec_resonances;
@@ -934,15 +934,15 @@ int main(int argc, char **argv){
     s12.setNumBins(bins);
     s13.setNumBins(bins);
 
-    const string bkgfile = "../../../dados/bkg_histo_16.root";
-    const string efffile = "../../../dados/eff_16.root";
+    const string bkgfile = "../../../dados/bkgBW_16_BDT0.18_Smoothed.root";
+    const string efffile = "../../../dados/acc_15_MC_TIS_RW_BDT0.18_SigRegion_Smoothed.root";
     const string bkghist = "h_eff";
     const string effhist = "h_eff";
 
     auto efficiency = makeHistogramPdf(efffile,effhist,s12,s13,"eff_coef");
     auto background = makeHistogramPdf(bkgfile,bkghist,s12,s13,"bkg_coef");
     auto signal = makesignalpdf(s12, s13, eventNumber,efficiency);
-    AddPdf *prodpdf = new AddPdf("prodpdf", Variable("frac",0.925), signal, background) ;
+    AddPdf *prodpdf = new AddPdf("prodpdf", Variable("frac",0.925529), signal, background) ;
 
 
     if(*makeToy) {
