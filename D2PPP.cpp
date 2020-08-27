@@ -93,7 +93,7 @@ EventNumber eventNumber("eventNumber");
 vector<fptype> HH_bin_limits; // bins over s_pipi spectrum
 vector<Variable> pwa_coefs_amp; // mag(real)_coefs
 vector<Variable> pwa_coefs_phs; // phase(imag)_coefs
-const string pwa_file = "files/PWACOEFS.txt"; // input points for MIPWA
+const string pwa_file = "files/PWACOEFS_51pts.txt"; // input points for MIPWA
 
 ResonancePdf *loadPWAResonance(const std::string fname = pwa_file, bool polar=true) {
 //load the MIPWA resonance function
@@ -210,15 +210,20 @@ GooPdf *polyEff( Observable s12 , Observable s13){
 }
 
 
-GooPdf *makeDstar_veto(Observable s12, Observable s13) {
+GooPdf *make_veto(Observable s12, Observable s13) {
 //Make veto if needed. For Ds we only apply fiducial 
    
     VetoInfo Fiducial_veto12(Variable("Fiducial_veto12_min", 0.), Variable("Fiducial_veto12_max", s12.getLowerLimit()), PAIR_12);
     VetoInfo Fiducial_veto13(Variable("Fiducial_veto13_min", 0.), Variable("Fiducial_veto13_max", s13.getLowerLimit()), PAIR_13);
     
+    VetoInfo D0_veto12(Variable("D0_veto12_min", 3.1), Variable("D0_veto12_max", s12.getUpperLimit()+0.1), PAIR_12);
+    VetoInfo D0_veto13(Variable("D0_veto13_min", 3.1), Variable("D0_veto13_max", s13.getUpperLimit()+0.1), PAIR_13);
+    
     std::vector<VetoInfo> vetos;
     vetos.push_back(Fiducial_veto12);
     vetos.push_back(Fiducial_veto13);
+    vetos.push_back(D0_veto12);
+    vetos.push_back(D0_veto13);
 
     auto Dstar_veto = new DalitzVetoPdf("Dstar_veto", s12, s13, 
         Variable("Mother_Mass",D_MASS), Variable("Daughter1_Mass",d1_MASS), 
@@ -272,20 +277,20 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     //from PDG
     double omega_MASS   = 0.78265;
     double omega_WIDTH  = 0.00849;
-    double omega_amp    = -0.0140856;
-    double omega_img  = 0.00292373;
+    double omega_amp    = -0.016251;
+    double omega_img  = 0.00207564;
 
     //From PDG and BABAR 
     double rho770_MASS   = 0.77549;
     double rho770_WIDTH  = 0.1491;
-    double rho770_amp    = -0.0212049;//10.19*cos(1.1);
-    double rho770_img  =  0.129617;//0.19*sin(1.1);
+    double rho770_amp    = -0.0102842;//10.19*cos(1.1);
+    double rho770_img  =  0.171685;//0.19*sin(1.1);
 
     //From PDG and BABAR 
     double rho1450_MASS   = 1.465 ;
     double rho1450_WIDTH  = 0.4  ;
-    double rho1450_amp    = 0.0314475;//1.2*cos(4.1);
-    double rho1450_img  =  -1.19442;//1.2*sin(4.1);
+    double rho1450_amp    = -0.167428;//1.2*cos(4.1);
+    double rho1450_img  =  -0.769214;//1.2*sin(4.1);
 
     //From PDG - Ref resonance
     double f2_1270_MASS     = 1.2751;
@@ -320,8 +325,8 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     //rho(1700)
     Variable v_rho1700_Mass("rho1700_MASS",1.720);
     Variable v_rho1700_Width("rho1700_WIDTH",0.25);
-    Variable v_rho1700_real("rho1700_REAL",0.348083,0.01,0,0);
-    Variable v_rho1700_img("rho1700_IMAG",-1.59008,0.01,0,0);
+    Variable v_rho1700_real("rho1700_REAL",1.80595,0.01,0,0);
+    Variable v_rho1700_img("rho1700_IMAG",-0.574122,0.01,0,0);
 
 
     //D-wave
@@ -363,8 +368,8 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     Variable nonr_imag("nonr_IMAG",0./*0.09*sin(torad(181))*/, 0.01,0,0);
 
     //Bose-Einstein - Parameter R from CMS paper
-    Variable be_real("be_REAL",0.0/*0.9*/,0.01,0,0);
-    Variable be_imag("be_IMAG",0.0/*-2.9*/,0.01,0,0);
+    Variable be_real("be_REAL",1.33775/*0.9*/,0.01,0,0);
+    Variable be_imag("be_IMAG",8.58481/*-2.9*/,0.01,0,0);
     Variable be_coef("be_RCOEF",1.0);
 
     //it is possible to initial variables above with random values in a range
@@ -459,8 +464,8 @@ void getData(std::string toyFileName, GooFit::Application &app, DataSet &data, b
         s12.setValue(s12_val);
         s13.setValue(s13_val);
         eventNumber.setValue(data.getNumEvents());
-        if((s12.getValue()<s12.getUpperLimit())
-            &&(s13.getValue()<s13.getUpperLimit())
+        if((s12.getValue()<3.1)
+            &&(s13.getValue()<3.1)
             &&(s12.getValue()>s12.getLowerLimit())
             &&(s13.getValue()>s13.getLowerLimit()))
         {
@@ -805,7 +810,7 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
             Observable eventNumber = obs.at(2);
             
             UnbinnedDataSet toyMC({s12,s13,eventNumber});
-            dplotter.fillDataSetMC(toyMC,2000000);
+            dplotter.fillDataSetMC(toyMC,10000000);
             to_root(toyMC,fmt::format("Fit/{0}/toyMC.root",name.c_str()));
         }
 
@@ -934,15 +939,20 @@ int main(int argc, char **argv){
     s12.setNumBins(bins);
     s13.setNumBins(bins);
 
-    const string bkgfile = "../../../dados/bkgBW_16_BDT0.18_Smoothed.root";
+    const string bkgfile = "../../../dados/bkgWR_16_BDT0.18_Smoothed.root";
     const string efffile = "../../../dados/acc_15_MC_TIS_RW_BDT0.18_SigRegion_Smoothed.root";
     const string bkghist = "h_eff";
     const string effhist = "h_eff";
 
+    auto vetos = make_veto(s12,s13);
     auto efficiency = makeHistogramPdf(efffile,effhist,s12,s13,"eff_coef");
+    auto effWithVeto = new ProdPdf("effWithVeto",{efficiency,vetos});
+
     auto background = makeHistogramPdf(bkgfile,bkghist,s12,s13,"bkg_coef");
-    auto signal = makesignalpdf(s12, s13, eventNumber,efficiency);
-    AddPdf *prodpdf = new AddPdf("prodpdf", Variable("frac",0.925529), signal, background) ;
+    auto bkgWithVeto = new ProdPdf("bkgWithVeto",{background,vetos});
+
+    auto signal = makesignalpdf(s12, s13, eventNumber,effWithVeto);
+    AddPdf *prodpdf = new AddPdf("prodpdf", Variable("frac",0.925529), signal, bkgWithVeto) ;
 
 
     if(*makeToy) {
