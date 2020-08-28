@@ -93,7 +93,7 @@ EventNumber eventNumber("eventNumber");
 vector<fptype> HH_bin_limits; // bins over s_pipi spectrum
 vector<Variable> pwa_coefs_amp; // mag(real)_coefs
 vector<Variable> pwa_coefs_phs; // phase(imag)_coefs
-const string pwa_file = "files/PWACOEFS_51pts.txt"; // input points for MIPWA
+const string pwa_file = "files/PWACOEFS_50pts.txt"; // input points for MIPWA
 
 ResonancePdf *loadPWAResonance(const std::string fname = pwa_file, bool polar=true) {
 //load the MIPWA resonance function
@@ -216,8 +216,8 @@ GooPdf *make_veto(Observable s12, Observable s13) {
     VetoInfo Fiducial_veto12(Variable("Fiducial_veto12_min", 0.), Variable("Fiducial_veto12_max", s12.getLowerLimit()), PAIR_12);
     VetoInfo Fiducial_veto13(Variable("Fiducial_veto13_min", 0.), Variable("Fiducial_veto13_max", s13.getLowerLimit()), PAIR_13);
     
-    VetoInfo D0_veto12(Variable("D0_veto12_min", 3.1), Variable("D0_veto12_max", s12.getUpperLimit()+0.1), PAIR_12);
-    VetoInfo D0_veto13(Variable("D0_veto13_min", 3.1), Variable("D0_veto13_max", s13.getUpperLimit()+0.1), PAIR_13);
+    VetoInfo D0_veto12(Variable("D0_veto12_min", 3.31), Variable("D0_veto12_max", s12.getUpperLimit()+0.1), PAIR_12);
+    VetoInfo D0_veto13(Variable("D0_veto13_min", 3.31), Variable("D0_veto13_max", s13.getUpperLimit()+0.1), PAIR_13);
     
     std::vector<VetoInfo> vetos;
     vetos.push_back(Fiducial_veto12);
@@ -370,8 +370,8 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     //Bose-Einstein - Parameter R from CMS paper
     Variable be_real("be_REAL",1.33775/*0.9*/,0.01,0,0);
     Variable be_imag("be_IMAG",8.58481/*-2.9*/,0.01,0,0);
-    Variable be_coef("be_RCOEF",1.0);
-
+    Variable be_coef("be_RCOEF",1.);
+    Variable be_delta("be_RDELTA",73.e-3);
     //it is possible to initial variables above with random values in a range
     //e.g. v_omega_real.setRandomValue(-0.0160 - 5*0.0009,-0.0160 + 5*0.0009)
    
@@ -402,7 +402,7 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
 
     auto nonr = new Resonances::NonRes("nonr", nonr_real, nonr_imag);
 
-    auto BEC   = new Resonances::BoseEinstein("be",be_real,be_imag,be_coef);
+    auto BEC   = new Resonances::BoseEinstein("be",be_real,be_imag,be_coef,be_delta);
 
     //MIPWA
     ResonancePdf *MIPWA = loadPWAResonance(pwa_file, true);
@@ -464,8 +464,8 @@ void getData(std::string toyFileName, GooFit::Application &app, DataSet &data, b
         s12.setValue(s12_val);
         s13.setValue(s13_val);
         eventNumber.setValue(data.getNumEvents());
-        if((s12.getValue()<3.1)
-            &&(s13.getValue()<3.1)
+        if((s12.getValue()<3.31)
+            &&(s13.getValue()<3.31)
             &&(s12.getValue()>s12.getLowerLimit())
             &&(s13.getValue()>s13.getLowerLimit()))
         {
@@ -939,7 +939,7 @@ int main(int argc, char **argv){
     s12.setNumBins(bins);
     s13.setNumBins(bins);
 
-    const string bkgfile = "../../../dados/bkgWR_16_BDT0.18_Smoothed.root";
+    const string bkgfile = "../../../dados/bkgBW_16_BDT0.18_Smoothed.root";
     const string efffile = "../../../dados/acc_15_MC_TIS_RW_BDT0.18_SigRegion_Smoothed.root";
     const string bkghist = "h_eff";
     const string effhist = "h_eff";
