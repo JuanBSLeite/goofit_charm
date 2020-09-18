@@ -107,16 +107,23 @@ ResonancePdf *loadPWAResonance(const std::string fname = pwa_file, bool polar=tr
 
     double e1, e2, e3;
     double emag, ephs;
+    const int n = 10;
+    const int m = 14;
+    double min = 0.990 - n*0.01;
+    double max = 0.990 + m*0.01;
 
     //reading input file
     size_t i = 0;
     while(reader >> e1 >> e2 >> e3) {
 
-            HH_bin_limits.push_back(e1*e1); //MIPWA first input
+   	if(e1<min || e1>max)
+	{ 
+			
+           HH_bin_limits.push_back(e1*e1); //MIPWA first input
 
-            if(!polar){
+           if(!polar){
 	    	emag = e2*cos(e3);
-            ephs = e2*sin(e3);
+                ephs = e2*sin(e3);
 		//Instantiation of fit parameters for MIPWA
 		Variable va(fmt::format("pwa_coef_{}_real", i), emag,0.01,-100.0,+100.0);
             	Variable vp(fmt::format("pwa_coef_{}_imag", i), ephs,0.01,-100.0,+100.0);
@@ -133,6 +140,8 @@ ResonancePdf *loadPWAResonance(const std::string fname = pwa_file, bool polar=tr
     		
            
             i++;
+
+	}
 
     }
 
@@ -249,7 +258,7 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     //Mass and width
 
     //parameters from Laura++
-    double f0_980_MASS    = 0.977;
+    double f0_980_MASS    = 0.990;
     double f0_980_GPP     = 0.165;
     double f0_980_GKK     = 4.2*0.165;
     double f0_980_WIDTH   = 0.4;
@@ -339,11 +348,11 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     //S-wave
     //f0(980)
     Variable v_f0_980_Mass("f0_980_MASS",f0_980_MASS);
-    Variable v_f0_980_GPP("f0_980_GPP",f0_980_GPP);
-    Variable v_f0_980_GKK("f0_980_GKK",f0_980_GKK);
+    Variable v_f0_980_GPP("f0_980_GPP",f0_980_GPP,0.01,0,0);//0.05*f0_980_GPP,2.5*f0_980_GPP);
+    Variable v_f0_980_GKK("f0_980_GKK",f0_980_GKK,0.01,0,0);//0.5*f0_980_GKK,2.);
     Variable v_f0_980_Width("f0_980_WIDTH",f0_980_WIDTH);
-    Variable v_f0_980_real("f0_980_REAL",f0_980_amp, 0.0001,0,0);
-    Variable v_f0_980_img("f0_980_IMAG",f0_980_img, 0.0001,0,0);
+    Variable v_f0_980_real("f0_980_REAL",f0_980_amp, 0.01,0,0);
+    Variable v_f0_980_img("f0_980_IMAG",f0_980_img, 0.01,0,0);
 
     //a0(980)
     Variable v_a0_980_Mass("a0_980_MASS",a0_980_MASS);
@@ -420,7 +429,7 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
 
     //not included
     //vec_resonances.push_back(a0_980);
-    //vec_resonances.push_back(f0_980);
+    vec_resonances.push_back(f0_980);
     //vec_resonances.push_back(f0_Mix);
     //vec_resonances.push_back(f0_1500);
     //vec_resonances.push_back(f0_1370);
@@ -774,7 +783,7 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
    open2.close();
 
    //not working properly yet
-   convertToMagPhase(m,param,param.size(),npar,name);
+//   convertToMagPhase(m,param,param.size(),npar,name);
 
     //TIP!
     //If you want to free some paramters after previous fit
@@ -940,7 +949,7 @@ int main(int argc, char **argv){
     s13.setNumBins(bins);
 
     const string bkgfile = "../../../dados/bkgBW_16_BDT0.18_Smoothed.root";
-    const string efffile = "../../../dados/acc_15_MC_TIS_RW_BDT0.18_SigRegion_Smoothed.root";
+    const string efffile = "../../../dados/oldFiles/eff_16.root";//"../../../dados/acc_15_MC_TIS_RW_BDT0.18_SigRegion_Smoothed.root";
     const string bkghist = "h_eff";
     const string effhist = "h_eff";
 
