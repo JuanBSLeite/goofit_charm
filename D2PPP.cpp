@@ -116,8 +116,6 @@ ResonancePdf *loadPWAResonance(const std::string fname = pwa_file, bool polar=tr
     size_t i = 0;
     while(reader >> e1 >> e2 >> e3) {
 
-   	if(e1<min || e1>max)
-	{ 
 			
            HH_bin_limits.push_back(e1*e1); //MIPWA first input
 
@@ -141,7 +139,7 @@ ResonancePdf *loadPWAResonance(const std::string fname = pwa_file, bool polar=tr
            
             i++;
 
-	}
+	
 
     }
 
@@ -429,7 +427,7 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
 
     //not included
     //vec_resonances.push_back(a0_980);
-    vec_resonances.push_back(f0_980);
+    //vec_resonances.push_back(f0_980);
     //vec_resonances.push_back(f0_Mix);
     //vec_resonances.push_back(f0_1500);
     //vec_resonances.push_back(f0_1370);
@@ -949,7 +947,7 @@ int main(int argc, char **argv){
     s13.setNumBins(bins);
 
     const string bkgfile = "../../../dados/bkgBW_16_BDT0.18_Smoothed.root";
-    const string efffile = "../../../dados/oldFiles/eff_16.root";//"../../../dados/acc_15_MC_TIS_RW_BDT0.18_SigRegion_Smoothed.root";
+    const string efffile = "../../../dados/acc_15_MC_TIS_RW_BDT0.18_SigRegion_Smoothed.root";
     const string bkghist = "h_eff";
     const string effhist = "h_eff";
 
@@ -961,7 +959,7 @@ int main(int argc, char **argv){
     auto bkgWithVeto = new ProdPdf("bkgWithVeto",{background,vetos});
 
     auto signal = makesignalpdf(s12, s13, eventNumber,effWithVeto);
-    AddPdf *prodpdf = new AddPdf("prodpdf", Variable("frac",0.925529), signal, bkgWithVeto) ;
+    AddPdf *prodpdf = new AddPdf("prodpdf", Variable("frac",0.926), signal, bkgWithVeto) ;
 
 
     if(*makeToy) {
