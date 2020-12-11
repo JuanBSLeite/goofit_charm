@@ -719,7 +719,7 @@ int main(int argc, char **argv){
     s12.setNumBins(bins);
     s13.setNumBins(bins);
 
-    const string bkgfile = "/home/juan/juan/work/dados/bkg_16_bw_Smoothed.root";
+    const string bkgfile = "/home/juan/juan/work/dados/bkg_15_bw_Smoothed.root";
     const string efffile = "/home/juan/juan/work/dados/acc_15_Smoothed.root";
     const string bkghist = "h_eff";
     const string effhist = "h_eff";
