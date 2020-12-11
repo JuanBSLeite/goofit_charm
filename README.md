@@ -1,4 +1,4 @@
 # goofit_charm
 
-GenFit studies using GooFit MPI
+Ds->pi+pi-pi- Dalitz plot fit using MIPWA code
 
