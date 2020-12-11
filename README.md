@@ -1,3 +1,1 @@
-# goofit_charm
-
-MIPWA STUDIES USING D_(s)^{+} \rightarrow #pi^{-}#pi^{+}#pi^{+} phase space.
+# Repository of Ds->pi-pi+pi+ Dalitz Plot Analysis using MIPWA
