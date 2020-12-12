@@ -315,9 +315,9 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     double rho1450_WIDTH  = 0.4  ;
     double rho1450_amp    = 0.0965302;
     double rho1450_img  =  -1.49069;
-    double rho1450_MASS_lower    = rho1450_MASS + 2*0.1;
+    double rho1450_MASS_lower    = rho1450_MASS - 2*0.1;
     double rho1450_MASS_upper  =  rho1450_MASS + 2*0.1;
-    double rho1450_WIDTH_lower    = rho1450_WIDTH + 2*0.1;
+    double rho1450_WIDTH_lower    = rho1450_WIDTH - 2*0.1;
     double rho1450_WIDTH_upper  =  rho1450_WIDTH + 2*0.1;
 
     //From PDG 2020 
@@ -412,8 +412,8 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
 
     v_rho770_Mass.setFixed(true);
     v_rho770_Width.setFixed(true);
-    v_rho1450_Mass.setFixed(false);
-    v_rho1450_Width.setFixed(false);
+    v_rho1450_Mass.setFixed(true);
+    v_rho1450_Width.setFixed(true);
     v_rho1700_Mass.setFixed(true);
     v_rho1700_Width.setFixed(true);
 
@@ -443,7 +443,7 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     vec_resonances.push_back(omega); 
     vec_resonances.push_back(rho770); 
     vec_resonances.push_back(rho1450);
-    vec_resonances.push_back(rho1700);
+    //vec_resonances.push_back(rho1700);
     vec_resonances.push_back(f2_1270);
     //vec_resonances.push_back(BEC);
     vec_resonances.push_back(MIPWA);
