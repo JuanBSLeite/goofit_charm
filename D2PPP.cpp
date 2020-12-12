@@ -412,8 +412,8 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
 
     v_rho770_Mass.setFixed(true);
     v_rho770_Width.setFixed(true);
-    v_rho1450_Mass.setFixed(true);
-    v_rho1450_Width.setFixed(true);
+    v_rho1450_Mass.setFixed(false);
+    v_rho1450_Width.setFixed(false);
     v_rho1700_Mass.setFixed(true);
     v_rho1700_Width.setFixed(true);
 
