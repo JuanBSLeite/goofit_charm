@@ -301,8 +301,8 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     double omega_img  = 0.00389717;
 
     //From PDG 2020 CHARGED ONLY, HADROPRODUCED
-    double rho770_MASS   = 0.7665;
-    double rho770_WIDTH  = 0.1502;
+    double rho770_MASS   = 0.759857;
+    double rho770_WIDTH  = 0.151862;
     double rho770_amp    = 0.0424781;
     double rho770_img  =  0.140073;
     double rho770_MASS_lower    = rho770_MASS - 2*0.01;
@@ -311,8 +311,8 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     double rho770_WIDTH_upper  =  rho770_WIDTH + 2*0.06;
 
     //From PDG 2020
-    double rho1450_MASS   = 1.465 ;
-    double rho1450_WIDTH  = 0.4  ;
+    double rho1450_MASS   = 1.48069 ;
+    double rho1450_WIDTH  = 0.316717 ;
     double rho1450_amp    = 0.0965302;
     double rho1450_img  =  -1.49069;
     double rho1450_MASS_lower    = rho1450_MASS - 2*0.1;
@@ -321,8 +321,8 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     double rho1450_WIDTH_upper  =  rho1450_WIDTH + 2*0.1;
 
     //From PDG 2020 
-    double rho1700_MASS   = 1.720 ;
-    double rho1700_WIDTH  = 0.25 ;
+    double rho1700_MASS   = 1.74418 ;
+    double rho1700_WIDTH  = 0.353422 ;
     double rho1700_amp    = 0.0488417;
     double rho1700_img  = -2.18071;
     double rho1700_MASS_lower    = rho1700_MASS + 2*0.1;
@@ -443,7 +443,7 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     vec_resonances.push_back(omega); 
     vec_resonances.push_back(rho770); 
     vec_resonances.push_back(rho1450);
-    //vec_resonances.push_back(rho1700);
+    vec_resonances.push_back(rho1700);
     vec_resonances.push_back(f2_1270);
     //vec_resonances.push_back(BEC);
     vec_resonances.push_back(MIPWA);
