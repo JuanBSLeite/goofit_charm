@@ -407,7 +407,7 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     //Bose-Einstein - Parameter R from CMS paper
     Variable be_real("be_REAL",0.,0.01,0,0);
     Variable be_imag("be_IMAG",0.,0.01,0,0);
-    Variable be_coef("be_RCOEF",1.);
+    Variable be_coef("be_RCOEF",1.5);
     Variable be_delta("be_RDELTA",0.);//73.e-3);
 
     v_rho770_Mass.setFixed(true);
@@ -445,7 +445,7 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     vec_resonances.push_back(rho1450);
     vec_resonances.push_back(rho1700);
     vec_resonances.push_back(f2_1270);
-    vec_resonances.push_back(BEC);
+    //vec_resonances.push_back(BEC);
     vec_resonances.push_back(MIPWA);
 
     //not included
