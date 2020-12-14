@@ -331,8 +331,8 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     double rho1700_WIDTH_upper  =  rho1700_WIDTH + 2*0.1;
 
     //From PDG 2020 - ABLIKIM
-    double f2_1270_MASS     = 1.262;
-    double f2_1270_WIDTH    = 0.175;
+    double f2_1270_MASS     = 1.2755;
+    double f2_1270_WIDTH    = 0.1867;
     double f2_1270_amp      = 1.;
     double f2_1270_img    = 0.;
     
