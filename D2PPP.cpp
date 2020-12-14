@@ -297,14 +297,14 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     //from PDG 2020
     double omega_MASS   = 0.78265;
     double omega_WIDTH  = 0.00849;
-    double omega_amp    = -0.0179867;
-    double omega_img  = 0.00389717;
+    double omega_amp    = -0.0162902;
+    double omega_img  = 0.00577515;
 
     //From PDG 2020 CHARGED ONLY, HADROPRODUCED
     double rho770_MASS   = 0.759857;
     double rho770_WIDTH  = 0.151862;
-    double rho770_amp    = 0.0424781;
-    double rho770_img  =  0.140073;
+    double rho770_amp    = 0.0737078;
+    double rho770_img  =  0.129987;
     double rho770_MASS_lower    = rho770_MASS - 2*0.01;
     double rho770_MASS_upper  =  rho770_MASS + 2*0.01;
     double rho770_WIDTH_lower    = rho770_WIDTH - 2*0.06;
@@ -313,8 +313,8 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     //From PDG 2020
     double rho1450_MASS   = 1.48069 ;
     double rho1450_WIDTH  = 0.316717 ;
-    double rho1450_amp    = 0.0965302;
-    double rho1450_img  =  -1.49069;
+    double rho1450_amp    = 0.159456;
+    double rho1450_img  =  -0.896579;
     double rho1450_MASS_lower    = rho1450_MASS - 2*0.1;
     double rho1450_MASS_upper  =  rho1450_MASS + 2*0.1;
     double rho1450_WIDTH_lower    = rho1450_WIDTH - 2*0.1;
@@ -323,8 +323,8 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     //From PDG 2020 
     double rho1700_MASS   = 1.74418 ;
     double rho1700_WIDTH  = 0.353422 ;
-    double rho1700_amp    = 0.0488417;
-    double rho1700_img  = -2.18071;
+    double rho1700_amp    = 0.464466;
+    double rho1700_img  = -3.61572;
     double rho1700_MASS_lower    = rho1700_MASS + 2*0.1;
     double rho1700_MASS_upper  =  rho1700_MASS + 2*0.1;
     double rho1700_WIDTH_lower    = rho1700_WIDTH + 2*0.1;
@@ -445,7 +445,7 @@ DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventN
     vec_resonances.push_back(rho1450);
     vec_resonances.push_back(rho1700);
     vec_resonances.push_back(f2_1270);
-    //vec_resonances.push_back(BEC);
+    vec_resonances.push_back(BEC);
     vec_resonances.push_back(MIPWA);
 
     //not included
