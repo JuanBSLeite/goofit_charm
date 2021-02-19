@@ -1,462 +1,461 @@
-// ROOT stuff
-#include <TApplication.h>
-#include <TCanvas.h>
-#include <TFile.h>
-#include <TRandom3.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TGraph.h>
-#include <TTree.h>
-#include <TROOT.h>
-#include <TMinuit.h>
-#include <TNtuple.h>
-#include <TComplex.h>
-#include <TFile.h>
-#include <TStyle.h>
-#include <TH2Poly.h>
-#include <TGraphErrors.h>
+	// ROOT stuff
+	#include <TApplication.h>
+	#include <TCanvas.h>
+	#include <TFile.h>
+	#include <TRandom3.h>
+	#include <TH1F.h>
+	#include <TH2F.h>
+	#include <TGraph.h>
+	#include <TTree.h>
+	#include <TROOT.h>
+	#include <TMinuit.h>
+	#include <TNtuple.h>
+	#include <TComplex.h>
+	#include <TFile.h>
+	#include <TStyle.h>
+	#include <TH2Poly.h>
+	#include <TGraphErrors.h>
 
-//Minuit
-#include <Minuit2/MnStrategy.h>
-#include <Minuit2/Minuit2Minimizer.h>
+	//Minuit
+	#include <Minuit2/MnStrategy.h>
+	#include <Minuit2/Minuit2Minimizer.h>
 
-// System stuff
-#include <CLI/Timer.hpp>
-#include <fstream>
-#include <string>
-#include <time.h>
+	// System stuff
+	#include <CLI/Timer.hpp>
+	#include <fstream>
+	#include <string>
+	#include <time.h>
 
-// GooFit stuff
-#include <goofit/Application.h>
-#include <goofit/BinnedDataSet.h>
-#include <goofit/FitManager.h>
-#include <goofit/PDFs/GooPdf.h>
-#include <goofit/PDFs/basic/SmoothHistogramPdf.h>
-#include <goofit/PDFs/basic/PolynomialPdf.h>
-#include <goofit/PDFs/combine/AddPdf.h>
-#include <goofit/PDFs/combine/ProdPdf.h>
-#include <goofit/PDFs/physics/DalitzPlotPdf.h>
-#include <goofit/PDFs/physics/DalitzVetoPdf.h>
-#include <goofit/PDFs/physics/ResonancePdf.h>
-#include <goofit/UnbinnedDataSet.h>
-#include <goofit/Variable.h>
-#include <goofit/PDFs/physics/DalitzPlotter.h>
-#include <goofit/FunctorWriter.h>
+	// GooFit stuff
+	#include <goofit/Application.h>
+	#include <goofit/BinnedDataSet.h>
+	#include <goofit/FitManager.h>
+	#include <goofit/PDFs/GooPdf.h>
+	#include <goofit/PDFs/basic/SmoothHistogramPdf.h>
+	#include <goofit/PDFs/basic/PolynomialPdf.h>
+	#include <goofit/PDFs/combine/AddPdf.h>
+	#include <goofit/PDFs/combine/ProdPdf.h>
+	#include <goofit/PDFs/physics/DalitzPlotPdf.h>
+	#include <goofit/PDFs/physics/DalitzVetoPdf.h>
+	#include <goofit/PDFs/physics/ResonancePdf.h>
+	#include <goofit/UnbinnedDataSet.h>
+	#include <goofit/Variable.h>
+	#include <goofit/PDFs/physics/DalitzPlotter.h>
+	#include <goofit/FunctorWriter.h>
 
-//Matrix 
-#include <Eigen/Core>
-#include <Eigen/LU>
-
-
-#define torad(x)(x*M_PI/180.)
-
-using namespace std;
-using namespace GooFit;
-using namespace ROOT;
+	//Matrix 
+	#include <Eigen/Core>
+	#include <Eigen/LU>
 
 
-//Initial and final states parameters
-double pi_MASS  = 0.13957018; 
-//D_MASS from inv Mass fit
-double D_MASS   = 1.97034;//MeV/c²  
-double k_MASS = 0.493677;
+	#define torad(x)(x*M_PI/180.)
 
-double Mother_MASS = D_MASS;
-double d1_MASS  = pi_MASS; 
-double d2_MASS  = pi_MASS;
-double d3_MASS  = pi_MASS;
+	using namespace std;
+	using namespace GooFit;
+	using namespace ROOT;
 
-Variable Mother_Mass("Mother_Mass",D_MASS);
-Variable Daughter1_Mass("Daughter1_Mass",d1_MASS);
-Variable Daughter2_Mass("Daughter2_Mass",d2_MASS);
-Variable Daughter3_Mass("Daughter3_Mass",d3_MASS);
 
-//Bins for grid normalization
-const int bins = 400;
+	//Initial and final states parameters
+	double pi_MASS  = 0.13957018; 
+	//D_MASS from inv Mass fit
+	double D_MASS   = 1.96834;//MeV/c²  
+	double k_MASS = 0.493677;
 
-//N Bins for eff and bkg scanning
-const int bins_eff_bkg = bins;
+	double Mother_MASS = D_MASS;
+	double d1_MASS  = pi_MASS; 
+	double d2_MASS  = pi_MASS;
+	double d3_MASS  = pi_MASS;
 
-//Dalitz Limits
-fptype s12_min = POW2(d1_MASS  + d2_MASS);
-fptype s12_max = POW2(D_MASS   - d3_MASS);
-fptype s13_min = POW2(d1_MASS  + d3_MASS);
-fptype s13_max = POW2(D_MASS   - d2_MASS);
-fptype s23_min = POW2(d2_MASS  + d3_MASS);
-fptype s23_max = POW2(D_MASS   - d1_MASS);
+	Variable Mother_Mass("Mother_Mass",D_MASS);
+	Variable Daughter1_Mass("Daughter1_Mass",d1_MASS);
+	Variable Daughter2_Mass("Daughter2_Mass",d2_MASS);
+	Variable Daughter3_Mass("Daughter3_Mass",d3_MASS);
 
-//Observables
-Observable s12("s12",s12_min,s12_max); 
-Observable s13("s13",s13_min,s13_max);
-Observable s23("s23",s23_min,s23_max);
-EventNumber eventNumber("eventNumber"); 
+	//Bins for grid normalization
+	const int bins = 500;
 
-// For MIPWA
-vector<fptype> HH_bin_limits; // bins over s_pipi spectrum
-vector<Variable> pwa_coefs_amp; // mag(real)_coefs
-vector<Variable> pwa_coefs_phs; // phase(imag)_coefs
-const string pwa_file = "files/PWACOEFS_50pts.txt"; // input points for MIPWA
+	//N Bins for eff and bkg scanning
+	const int bins_eff_bkg = 2000;
 
-const int NevG = 1e7; 
+	//Dalitz Limits
+	fptype s12_min = POW2(d1_MASS  + d2_MASS);
+	fptype s12_max = POW2(D_MASS   - d3_MASS);
+	fptype s13_min = POW2(d1_MASS  + d3_MASS);
+	fptype s13_max = POW2(D_MASS   - d2_MASS);
+	fptype s23_min = POW2(d2_MASS  + d3_MASS);
+	fptype s23_max = POW2(D_MASS   - d1_MASS);
 
-ResonancePdf *loadPWAResonance(const std::string fname = pwa_file, bool polar=true) {
-//load the MIPWA resonance function
+	//Observables
+	Observable s12("s12",s12_min,s12_max); 
+	Observable s13("s13",s13_min,s13_max);
+	Observable s23("s23",s23_min,s23_max);
+	EventNumber eventNumber("eventNumber"); 
 
-    std::ifstream reader;
-    reader.open(fname.c_str());
-    assert(reader.good());
-    HH_bin_limits.clear();
-    pwa_coefs_amp.clear();
-    pwa_coefs_phs.clear();
+	// For MIPWA
+	vector<fptype> HH_bin_limits; // bins over s_pipi spectrum
+	vector<Variable> pwa_coefs_amp; // mag(real)_coefs
+	vector<Variable> pwa_coefs_phs; // phase(imag)_coefs
+	const string pwa_file = "files/PWACOEFS_50pts.txt"; // input points for MIPWA
 
-    double e1, e2, e3;
-    double emag, ephs;
+	const int NevG = 1e7; 
 
-    //reading input file
-    size_t i = 0;
-    while(reader >> e1 >> e2 >> e3) {
+	ResonancePdf *loadPWAResonance(const std::string fname = pwa_file, bool polar=true) {
+	//load the MIPWA resonance function
 
-			
-           HH_bin_limits.push_back(e1*e1); //MIPWA first input
+	    std::ifstream reader;
+	    reader.open(fname.c_str());
+	    assert(reader.good());
+	    HH_bin_limits.clear();
+	    pwa_coefs_amp.clear();
+	    pwa_coefs_phs.clear();
 
-           if(!polar){
-	    	    emag = e2*cos(e3);
-                ephs = e2*sin(e3);
-		        //Instantiation of fit parameters for MIPWA
-		        Variable va(fmt::format("pwa_coef_{}_real", i), emag,0.01,-100.0,+100.0);
-            	Variable vp(fmt::format("pwa_coef_{}_imag", i), ephs,0.01,-100.0,+100.0);
-		        pwa_coefs_amp.push_back(va);
-            	pwa_coefs_phs.push_back(vp);
+	    double e1, e2, e3;
+	    double emag, ephs;
+
+	    //reading input file
+	    size_t i = 0;
+	    while(reader >> e1 >> e2 >> e3) {
+
+				
+		   HH_bin_limits.push_back(e1*e1); //MIPWA first input
+
+		   if(!polar){
+			    emag = e2*cos(e3);
+				ephs = e2*sin(e3);
+				//Instantiation of fit parameters for MIPWA
+				Variable va(fmt::format("pwa_coef_{}_real", i), emag,0.01,-100.0,+100.0);
+				Variable vp(fmt::format("pwa_coef_{}_imag", i), ephs,0.01,-100.0,+100.0);
+				pwa_coefs_amp.push_back(va);
+				pwa_coefs_phs.push_back(vp);
+		    }else{
+				emag = e2;
+				ephs = e3;
+				Variable va(fmt::format("pwa_coef_{}_mag", i), emag,0.01,0.,+50.);
+				Variable vp(fmt::format("pwa_coef_{}_phase", i), ephs,0.01,-2.*M_PI,+2.*M_PI);
+				pwa_coefs_amp.push_back(va);
+				pwa_coefs_phs.push_back(vp);
+		    } 
+		    i++;
+	    }
+
+	    std::cout << "------------------------------------------" << std::endl;
+	    std::cout << pwa_coefs_amp.size() << " QMIPWA points loaded!" << std::endl;
+	    std::cout << "------------------------------------------" << std::endl;
+
+	    //global phase for S-wave (ever fixed)
+	    Variable swave_amp_real("swave_real_coef", 1.0);
+	    Variable swave_amp_imag("swave_imag_coef", 0.0);
+
+	    if(polar){
+
+		auto swave_12 = new Resonances::SplinePolar("MIPWA-Polar", swave_amp_real, swave_amp_imag, HH_bin_limits, pwa_coefs_amp, pwa_coefs_phs, PAIR_12, true);
+		return swave_12;
+
 	    }else{
-		        emag = e2;
-            	ephs = e3;
-		        Variable va(fmt::format("pwa_coef_{}_mag", i), emag,0.01,0.,+50.);
-            	Variable vp(fmt::format("pwa_coef_{}_phase", i), ephs,0.01,-2.*M_PI,+2.*M_PI);
-		        pwa_coefs_amp.push_back(va);
-            	pwa_coefs_phs.push_back(vp);
+
+		auto swave_12 = new Resonances::Spline("MIPWA-Real", swave_amp_real, swave_amp_imag, HH_bin_limits, pwa_coefs_amp, pwa_coefs_phs, PAIR_12, true);
+		return swave_12;
+
+	    }
+
+	    
+	} 
+
+
+	GooPdf* makeHistogramPdf(std::string efffile, std::string effhist, Observable s12, Observable s13,bool eff, bool doEffSwap, bool saveEffPlot) {
+
+	    std::vector<Observable> lvars = {s12,s13};
+	    BinnedDataSet *binEffData = new BinnedDataSet(lvars);
+	    
+	    TFile *f     = TFile::Open(efffile.c_str());
+	    auto bkgHistogram = (TH2F *)f->Get(effhist.c_str());
+	    bkgHistogram->SetStats(false);  
+
+	    TRandom3 donram(16);
+
+	    if(eff){
+		std::cout << "---------------------------------------------" << std::endl;
+		std::cout << "Loading Efficiency PDF" << "\n";
+		std::cout << "---------------------------------------------" << std::endl;    
+	    }else{
+		std::cout << "---------------------------------------------" << std::endl;
+		std::cout << "Loading Background PDF" << "\n";
+		std::cout << "---------------------------------------------" << std::endl;
+	    }
+
+	    for(int i = 0; i < bins_eff_bkg; ++i) {
+		s12.setValue(s12.getLowerLimit() + (s12.getUpperLimit() - s12.getLowerLimit()) * (i + 0.5) / bins_eff_bkg);
+		for(int j = 0; j < bins_eff_bkg; ++j) {
+		    s13.setValue(s13.getLowerLimit() + (s13.getUpperLimit() - s13.getLowerLimit()) * (j + 0.5) / bins_eff_bkg);
+		    //check if pair (s12,s13) is inside DP
+		    if(!inDalitz(s12.getValue(), s13.getValue(), D_MASS, d1_MASS, d2_MASS, d3_MASS)){continue;}
+		    double weight = bkgHistogram->GetBinContent(bkgHistogram->FindBin(s12.getValue(), s13.getValue()));
+		    binEffData->addWeightedEvent(weight);
+
+		    if(doEffSwap) {
+			double swapmass = s12.getValue();
+			s12.setValue(s13.getValue());
+			s13.setValue(swapmass);
+			weight = bkgHistogram->GetBinContent(bkgHistogram->FindBin(s12.getValue(), s13.getValue()));
+			binEffData->addWeightedEvent(weight);
+		    }
+		}
 	    } 
-            i++;
-    }
+	    
+	    if(saveEffPlot) {
+		TCanvas foo;
+		if(eff){
+		    foo.cd();
+		    bkgHistogram->Draw("colz");
+		    foo.SaveAs("plots/efficiency_bins.png");
+		    foo.SetLogz(true);
+		    foo.SaveAs("plots/efficiency_bins_log.png");
+		}else{
+		    foo.cd();
+		    bkgHistogram->Draw("colz");
+		    foo.SaveAs("plots/background_bins.png");
+		    foo.SetLogz(true);
+		    foo.SaveAs("plots/background_bins_log.png");
+		}
+		
+	    }
+	  
+	   
+	    Variable *effSmoothing= nullptr;
+	    
+	    if(eff){
+		effSmoothing = new Variable("effSmoothing", 0.);
+		return new SmoothHistogramPdf("eff_pdf", binEffData, *effSmoothing);
+	    }else{
+		effSmoothing = new Variable("bkgSmoothing", 0.);
+		return new SmoothHistogramPdf("bkg_pdf", binEffData, *effSmoothing);
+	    }
 
-    std::cout << "------------------------------------------" << std::endl;
-    std::cout << pwa_coefs_amp.size() << " QMIPWA points loaded!" << std::endl;
-    std::cout << "------------------------------------------" << std::endl;
-
-    //global phase for S-wave (ever fixed)
-    Variable swave_amp_real("swave_real_coef", 1.0);
-    Variable swave_amp_imag("swave_imag_coef", 0.0);
-
-    if(polar){
-
-    	auto swave_12 = new Resonances::SplinePolar("MIPWA-Polar", swave_amp_real, swave_amp_imag, HH_bin_limits, pwa_coefs_amp, pwa_coefs_phs, PAIR_12, true);
-	return swave_12;
-
-    }else{
-
-	auto swave_12 = new Resonances::Spline("MIPWA-Real", swave_amp_real, swave_amp_imag, HH_bin_limits, pwa_coefs_amp, pwa_coefs_phs, PAIR_12, true);
-	return swave_12;
-
-    }
-
-    
-} 
-
-
-GooPdf* makeHistogramPdf(std::string efffile, std::string effhist, Observable s12, Observable s13,bool eff, bool doEffSwap, bool saveEffPlot) {
-
-    std::vector<Observable> lvars = {s12,s13};
-    BinnedDataSet *binEffData = new BinnedDataSet(lvars);
-    
-    TFile *f     = TFile::Open(efffile.c_str());
-    auto bkgHistogram = (TH2F *)f->Get(effhist.c_str());
-    bkgHistogram->SetStats(false);  
-
-    TRandom3 donram(16);
-
-    if(eff){
-        std::cout << "---------------------------------------------" << std::endl;
-        std::cout << "Loading Efficiency PDF" << "\n";
-        std::cout << "---------------------------------------------" << std::endl;    
-    }else{
-        std::cout << "---------------------------------------------" << std::endl;
-        std::cout << "Loading Background PDF" << "\n";
-        std::cout << "---------------------------------------------" << std::endl;
-    }
-        
-    
-    for(int i = 0; i < NevG; i++) {
-        do {
-            s12.setValue(donram.Uniform(s12.getLowerLimit(), s12.getUpperLimit()));
-            s13.setValue(donram.Uniform(s13.getLowerLimit(), s13.getUpperLimit()));
-        } while(!inDalitz(s12.getValue(), s13.getValue(), D_MASS, d1_MASS, d2_MASS, d3_MASS));
-        
-        auto bin = bkgHistogram->FindBin(s12.getValue(), s13.getValue());
-        double weight = bkgHistogram->GetBinContent(bin);
-        binEffData->addWeightedEvent(weight);
-
-        if(doEffSwap) {
-            double swapmass = s12.getValue();
-            s12.setValue(s13.getValue());
-            s13.setValue(swapmass);
-            weight = bkgHistogram->GetBinContent(bkgHistogram->FindBin(s13.getValue(), s12.getValue()));
-            binEffData->addWeightedEvent(weight);
-        }
-    }
-    
-    if(saveEffPlot) {
-        TCanvas foo;
-        if(eff){
-            foo.cd();
-            bkgHistogram->Draw("colz");
-            foo.SaveAs("plots/efficiency_bins.png");
-            foo.SetLogz(true);
-            foo.SaveAs("plots/efficiency_bins_log.png");
-        }else{
-            foo.cd();
-            bkgHistogram->Draw("colz");
-            foo.SaveAs("plots/background_bins.png");
-            foo.SetLogz(true);
-            foo.SaveAs("plots/background_bins_log.png");
-        }
-        
-    }
-  
-   
-    Variable *effSmoothing= nullptr;
-    
-    if(eff){
-        effSmoothing = new Variable("effSmoothing", 0.);
-        return new SmoothHistogramPdf("eff_pdf", binEffData, *effSmoothing);
-    }else{
-        effSmoothing = new Variable("bkgSmoothing", 0.);
-        return new SmoothHistogramPdf("bkg_pdf", binEffData, *effSmoothing);
-    }
-
-    
-}
+	    
+	}
 
 
-GooPdf *polyEff( Observable s12 , Observable s13){
-//Polynomial default PDF if no eff provided
-    vector<Variable> offsets;
-    vector<Observable> observables;
-    vector<Variable> coefficients;
-    Variable constantOne("c1", 1);
-    Variable constantZero("c0", 0);
-    observables.push_back(s12);
-    observables.push_back(s13);
-    offsets.push_back(constantZero);
-    offsets.push_back(constantZero);
-    coefficients.push_back(constantOne);
-    PolynomialPdf* eff = new PolynomialPdf("constantEff", observables, coefficients, offsets, 0); //No efficiency
+	GooPdf *polyEff( Observable s12 , Observable s13){
+	//Polynomial default PDF if no eff provided
+	    vector<Variable> offsets;
+	    vector<Observable> observables;
+	    vector<Variable> coefficients;
+	    Variable constantOne("c1", 1);
+	    Variable constantZero("c0", 0);
+	    observables.push_back(s12);
+	    observables.push_back(s13);
+	    offsets.push_back(constantZero);
+	    offsets.push_back(constantZero);
+	    coefficients.push_back(constantOne);
+	    PolynomialPdf* eff = new PolynomialPdf("constantEff", observables, coefficients, offsets, 0); //No efficiency
 
-    return eff;
-}
+	    return eff;
+	}
 
-DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventNumber, GooPdf* eff = 0){
-// This function create our signal model 
+	DalitzPlotPdf* makesignalpdf( Observable s12, Observable s13, EventNumber eventNumber, GooPdf* eff = 0){
+	// This function create our signal model 
 
-    //set up the decay channel
-    DecayInfo3 dtoppp;
-    dtoppp.motherMass   = D_MASS;
-    dtoppp.daug1Mass    = d1_MASS;
-    dtoppp.daug2Mass    = d2_MASS;
-    dtoppp.daug3Mass    = d3_MASS;
-    dtoppp.meson_radius = 1.5;
-	
-    printf("Setting Signal model For Ds->3pi channel. \n");
+	    //set up the decay channel
+	    DecayInfo3 dtoppp;
+	    dtoppp.motherMass   = D_MASS;
+	    dtoppp.daug1Mass    = d1_MASS;
+	    dtoppp.daug2Mass    = d2_MASS;
+	    dtoppp.daug3Mass    = d3_MASS;
+	    dtoppp.meson_radius = 1.5;
+		
+	    printf("Setting Signal model For Ds->3pi channel. \n");
 
-    //Mass and width
+	    //Mass and width
 
-    //parameters from Laura++
-    double f0_980_MASS    = 0.990;
-    double f0_980_GPP     = 0.165;
-    double f0_980_GKK     = 4.2*0.165;
-    double f0_980_WIDTH   = 0.4;
-    double f0_980_amp     = 1.;
-    double f0_980_img     = 0.0;
+	    //parameters from Laura++
+	    double f0_980_MASS    = 0.990;
+	    double f0_980_GPP     = 0.165;
+	    double f0_980_GKK     = 4.2*0.165;
+	    double f0_980_WIDTH   = 0.4;
+	    double f0_980_amp     = 1.;
+	    double f0_980_img     = 0.0;
 
-    //from PDG
-    double a0_980_MASS    = 0.980 ;
-    double a0_980_WIDTH   = 0.05;
-    double a0_980_amp     = 1.0;
-    double a0_980_img     = 0.0;
-    
-    //from E791 paper
-    double f0_1370_MASS  = 1.434;
-    double f0_1370_WIDTH = 0.172;
-    double f0_1370_amp   = -0.8357;
-    double f0_1370_img = -0.5730;
+	    //from PDG
+	    double a0_980_MASS    = 0.980 ;
+	    double a0_980_WIDTH   = 0.05;
+	    double a0_980_amp     = 1.0;
+	    double a0_980_img     = 0.0;
+	    
+	    //from E791 paper
+	    double f0_1370_MASS  = 1.434;
+	    double f0_1370_WIDTH = 0.172;
+	    double f0_1370_amp   = -0.8357;
+	    double f0_1370_img = -0.5730;
 
-    //from PDG
-    double f0_1500_MASS  = 1.505;
-    double f0_1500_WIDTH = .109;
-    double f0_1500_amp   = 1.;
-    double f0_1500_img = 0.;
+	    //from PDG
+	    double f0_1500_MASS  = 1.505;
+	    double f0_1500_WIDTH = .109;
+	    double f0_1500_amp   = 1.;
+	    double f0_1500_img = 0.;
 
-    //from PDG 2020
-    double omega_MASS   = 0.78265;
-    double omega_WIDTH  = 0.00849;
-    double omega_amp    = -0.0162902;
-    double omega_img  = 0.00577515;
+	    //from PDG 2020
+	    double omega_MASS   = 0.78265;
+	    double omega_WIDTH  = 0.00849;
+	    double omega_amp    = -0.0162902;
+	    double omega_img  = 0.00577515;
 
-    //From PDG 2020 CHARGED ONLY, HADROPRODUCED
-    double rho770_MASS   = 0.759857;
-    double rho770_WIDTH  = 0.151862;
-    double rho770_amp    = 0.0737078;
-    double rho770_img  =  0.129987;
-    double rho770_MASS_lower    = rho770_MASS - 2*0.01;
-    double rho770_MASS_upper  =  rho770_MASS + 2*0.01;
-    double rho770_WIDTH_lower    = rho770_WIDTH - 2*0.06;
-    double rho770_WIDTH_upper  =  rho770_WIDTH + 2*0.06;
+	    //From PDG 2020 CHARGED ONLY, HADROPRODUCED
+	    double rho770_MASS   = 0.77549;
+	    double rho770_WIDTH  = 0.1491;
+	    double rho770_amp    = 0.0737078;
+	    double rho770_img  =  0.129987;
+	    double rho770_MASS_lower    = rho770_MASS - 2*0.01;
+	    double rho770_MASS_upper  =  rho770_MASS + 2*0.01;
+	    double rho770_WIDTH_lower    = rho770_WIDTH - 2*0.06;
+	    double rho770_WIDTH_upper  =  rho770_WIDTH + 2*0.06;
 
-    //From PDG 2020
-    double rho1450_MASS   = 1.48069 ;
-    double rho1450_WIDTH  = 0.316717 ;
-    double rho1450_amp    = 0.159456;
-    double rho1450_img  =  -0.896579;
-    double rho1450_MASS_lower    = rho1450_MASS - 2*0.1;
-    double rho1450_MASS_upper  =  rho1450_MASS + 2*0.1;
-    double rho1450_WIDTH_lower    = rho1450_WIDTH - 2*0.1;
-    double rho1450_WIDTH_upper  =  rho1450_WIDTH + 2*0.1;
+	    //From PDG 2020
+	    double rho1450_MASS   = 1.465 ;
+	    double rho1450_WIDTH  = 0.4 ;
+	    double rho1450_amp    = 0.159456;
+	    double rho1450_img  =  -0.896579;
+	    double rho1450_MASS_lower    = rho1450_MASS - 2*0.1;
+	    double rho1450_MASS_upper  =  rho1450_MASS + 2*0.1;
+	    double rho1450_WIDTH_lower    = rho1450_WIDTH - 2*0.1;
+	    double rho1450_WIDTH_upper  =  rho1450_WIDTH + 2*0.1;
 
-    //From PDG 2020 
-    double rho1700_MASS   = 1.74418 ;
-    double rho1700_WIDTH  = 0.353422 ;
-    double rho1700_amp    = 0.464466;
-    double rho1700_img  = -3.61572;
-    double rho1700_MASS_lower    = rho1700_MASS + 2*0.1;
-    double rho1700_MASS_upper  =  rho1700_MASS + 2*0.1;
-    double rho1700_WIDTH_lower    = rho1700_WIDTH + 2*0.1;
-    double rho1700_WIDTH_upper  =  rho1700_WIDTH + 2*0.1;
+	    //From PDG 2020 
+	    double rho1700_MASS   = 1.720 ;
+	    double rho1700_WIDTH  = 0.25 ;
+	    double rho1700_amp    = 0.464466;
+	    double rho1700_img  = -3.61572;
+	    double rho1700_MASS_lower    = rho1700_MASS + 2*0.1;
+	    double rho1700_MASS_upper  =  rho1700_MASS + 2*0.1;
+	    double rho1700_WIDTH_lower    = rho1700_WIDTH + 2*0.1;
+	    double rho1700_WIDTH_upper  =  rho1700_WIDTH + 2*0.1;
 
-    //From PDG 2020 - ABLIKIM
-    double f2_1270_MASS     = 1.2755;
-    double f2_1270_WIDTH    = 0.1867;
-    double f2_1270_amp      = 1.;
-    double f2_1270_img    = 0.;
-    
-    // Setting fit parameters
-    // Variable(name,value) for fixed parameters
-    // Variable(name,value,error,lower_limit,upper_limit) for free parametes with limits
-    // if you want without limits just do lower_limit=upper_limit=0
+	    //From PDG 2020 - ABLIKIM
+	    double f2_1270_MASS     = 1.2751;
+	    double f2_1270_WIDTH    = 0.1851;
+	    double f2_1270_amp      = 1.;
+	    double f2_1270_img    = 0.;
+	    
+	    // Setting fit parameters
+	    // Variable(name,value) for fixed parameters
+	    // Variable(name,value,error,lower_limit,upper_limit) for free parametes with limits
+	    // if you want without limits just do lower_limit=upper_limit=0
 
-    // P-Wave
-    //omega(782)
-    Variable v_omega_Mass("omega_MASS",omega_MASS);
-    Variable v_omega_Width("omega_WIDTH",omega_WIDTH);
-    Variable v_omega_real("omega_REAL",omega_amp,0.01,0,0);
-    Variable v_omega_img("omega_IMAG",omega_img,0.01,0,0);
+	    // P-Wave
+	    //omega(782)
+	    Variable v_omega_Mass("omega_MASS",omega_MASS);
+	    Variable v_omega_Width("omega_WIDTH",omega_WIDTH);
+	    Variable v_omega_real("omega_REAL",omega_amp,0.01,0,0);
+	    Variable v_omega_img("omega_IMAG",omega_img,0.01,0,0);
 
-    //rho(770)
-    Variable v_rho770_Mass("rho770_MASS",rho770_MASS,0.01,rho770_MASS_lower,rho770_MASS_upper);
-    Variable v_rho770_Width("rho770_WIDTH",rho770_WIDTH,0.01,rho770_WIDTH_lower,rho770_WIDTH_upper);
-    Variable v_rho770_real("rho770_REAL",rho770_amp,0.01,0,0);
-    Variable v_rho770_img("rho770_IMAG",rho770_img,0.01,0,0);
-    
-    //rho(1450)
-    Variable v_rho1450_Mass("rho1450_MASS",rho1450_MASS,0.01,rho1450_MASS_lower,rho1450_MASS_upper);
-    Variable v_rho1450_Width("rho1450_WIDTH",rho1450_WIDTH,0.01,rho1450_WIDTH_lower,rho1450_WIDTH_upper);
-    Variable v_rho1450_real("rho1450_REAL",rho1450_amp,0.01,0,0);
-    Variable v_rho1450_img("rho1450_IMAG",rho1450_img,0.01,0,0);
+	    //rho(770)
+	    Variable v_rho770_Mass("rho770_MASS",rho770_MASS,0.01,rho770_MASS_lower,rho770_MASS_upper);
+	    Variable v_rho770_Width("rho770_WIDTH",rho770_WIDTH,0.01,rho770_WIDTH_lower,rho770_WIDTH_upper);
+	    Variable v_rho770_real("rho770_REAL",rho770_amp,0.01,0,0);
+	    Variable v_rho770_img("rho770_IMAG",rho770_img,0.01,0,0);
+	    
+	    //rho(1450)
+	    Variable v_rho1450_Mass("rho1450_MASS",rho1450_MASS,0.01,rho1450_MASS_lower,rho1450_MASS_upper);
+	    Variable v_rho1450_Width("rho1450_WIDTH",rho1450_WIDTH,0.01,rho1450_WIDTH_lower,rho1450_WIDTH_upper);
+	    Variable v_rho1450_real("rho1450_REAL",rho1450_amp,0.01,0,0);
+	    Variable v_rho1450_img("rho1450_IMAG",rho1450_img,0.01,0,0);
 
-    //rho(1700)
-    Variable v_rho1700_Mass("rho1700_MASS",rho1700_MASS,0.01,rho1700_MASS_lower,rho1700_MASS_upper);
-    Variable v_rho1700_Width("rho1700_WIDTH",rho1700_WIDTH,0.01,rho1700_WIDTH_lower,rho1700_WIDTH_upper);
-    Variable v_rho1700_real("rho1700_REAL",rho1700_amp,0.01,0,0);
-    Variable v_rho1700_img("rho1700_IMAG",rho1700_img,0.01,0,0);
+	    //rho(1700)
+	    Variable v_rho1700_Mass("rho1700_MASS",rho1700_MASS,0.01,rho1700_MASS_lower,rho1700_MASS_upper);
+	    Variable v_rho1700_Width("rho1700_WIDTH",rho1700_WIDTH,0.01,rho1700_WIDTH_lower,rho1700_WIDTH_upper);
+	    Variable v_rho1700_real("rho1700_REAL",rho1700_amp,0.01,0,0);
+	    Variable v_rho1700_img("rho1700_IMAG",rho1700_img,0.01,0,0);
 
-    //D-wave
-    //f2(1270) Reference
-    Variable v_f2_1270_Mass("f2_1270_MASS",f2_1270_MASS);
-    Variable v_f2_1270_Width("f2_1270_WIDTH",f2_1270_WIDTH);
-    Variable v_f2_1270_real("f2_1270_REAL",f2_1270_amp);
-    Variable v_f2_1270_img("f2_1270_IMAG",f2_1270_img);
+	    //D-wave
+	    //f2(1270) Reference
+	    Variable v_f2_1270_Mass("f2_1270_MASS",f2_1270_MASS);
+	    Variable v_f2_1270_Width("f2_1270_WIDTH",f2_1270_WIDTH);
+	    Variable v_f2_1270_real("f2_1270_REAL",f2_1270_amp);
+	    Variable v_f2_1270_img("f2_1270_IMAG",f2_1270_img);
 
-    //S-wave
-    //f0(980)
-    Variable v_f0_980_Mass("f0_980_MASS",f0_980_MASS);
-    Variable v_f0_980_GPP("f0_980_GPP",f0_980_GPP);
-    Variable v_f0_980_GKK("f0_980_GKK",f0_980_GKK);
-    Variable v_f0_980_Width("f0_980_WIDTH",f0_980_WIDTH);
-    Variable v_f0_980_real("f0_980_REAL",f0_980_amp, 0.01,0,0);
-    Variable v_f0_980_img("f0_980_IMAG",f0_980_img, 0.01,0,0);
+	    //S-wave
+	    //f0(980)
+	    Variable v_f0_980_Mass("f0_980_MASS",f0_980_MASS);
+	    Variable v_f0_980_GPP("f0_980_GPP",f0_980_GPP);
+	    Variable v_f0_980_GKK("f0_980_GKK",f0_980_GKK);
+	    Variable v_f0_980_Width("f0_980_WIDTH",f0_980_WIDTH);
+	    Variable v_f0_980_real("f0_980_REAL",f0_980_amp, 0.01,0,0);
+	    Variable v_f0_980_img("f0_980_IMAG",f0_980_img, 0.01,0,0);
 
-    //a0(980)
-    Variable v_a0_980_Mass("a0_980_MASS",a0_980_MASS);
-    Variable v_a0_980_Width("a0_980_WIDTH",a0_980_WIDTH);
-    Variable v_a0_980_real("a0_980_REAL",a0_980_amp,0.01,0,0);
-    Variable v_a0_980_img("a0_980_REAL",a0_980_img, 0.01,0,0);
-    
-    //f0(1370)
-    Variable v_f0_1370_Mass("f0_1370_MASS",f0_1370_MASS);
-    Variable v_f0_1370_Width("f0_1370_WIDTH",f0_1370_WIDTH);
-    Variable v_f0_1370_real("f0_1370_REAL",f0_1370_amp,0.01,0,0);
-    Variable v_f0_1370_img("f0_1370_IMAG",f0_1370_img,0.01,0,0);
+	    //a0(980)
+	    Variable v_a0_980_Mass("a0_980_MASS",a0_980_MASS);
+	    Variable v_a0_980_Width("a0_980_WIDTH",a0_980_WIDTH);
+	    Variable v_a0_980_real("a0_980_REAL",a0_980_amp,0.01,0,0);
+	    Variable v_a0_980_img("a0_980_REAL",a0_980_img, 0.01,0,0);
+	    
+	    //f0(1370)
+	    Variable v_f0_1370_Mass("f0_1370_MASS",f0_1370_MASS);
+	    Variable v_f0_1370_Width("f0_1370_WIDTH",f0_1370_WIDTH);
+	    Variable v_f0_1370_real("f0_1370_REAL",f0_1370_amp,0.01,0,0);
+	    Variable v_f0_1370_img("f0_1370_IMAG",f0_1370_img,0.01,0,0);
 
-    //f0(1500)
-    Variable v_f0_1500_Mass("f0_1500_MASS",f0_1500_MASS);
-    Variable v_f0_1500_Width("f0_1500_WIDTH",f0_1500_WIDTH);
-    Variable v_f0_1500_real("f0_1500_REAL",f0_1500_amp, 0.01,0,0);
-    Variable v_f0_1500_img("f0_1500_IMAG",f0_1500_img, 0.01, 0,0);
+	    //f0(1500)
+	    Variable v_f0_1500_Mass("f0_1500_MASS",f0_1500_MASS);
+	    Variable v_f0_1500_Width("f0_1500_WIDTH",f0_1500_WIDTH);
+	    Variable v_f0_1500_real("f0_1500_REAL",f0_1500_amp, 0.01,0,0);
+	    Variable v_f0_1500_img("f0_1500_IMAG",f0_1500_img, 0.01, 0,0);
 
-    //NR
-    Variable nonr_real("nonr_REAL",1., 0.01,0,0);
-    Variable nonr_imag("nonr_IMAG",0., 0.01,0,0);
+	    //NR
+	    Variable nonr_real("nonr_REAL",1., 0.01,0,0);
+	    Variable nonr_imag("nonr_IMAG",0., 0.01,0,0);
 
-    //Bose-Einstein - Parameter R from CMS paper
-    Variable be_real("be_REAL",0.,0.01,0,0);
-    Variable be_imag("be_IMAG",0.,0.01,0,0);
-    Variable be_coef("be_RCOEF",1.5);
-    Variable be_delta("be_RDELTA",0.);//73.e-3);
+	    //Bose-Einstein - Parameter R from CMS paper
+	    Variable be_real("be_REAL",0.,0.01,0,0);
+	    Variable be_imag("be_IMAG",0.,0.01,0,0);
+	    Variable be_coef("be_RCOEF",1.5);
+	    Variable be_delta("be_RDELTA",0.);//73.e-3);
 
-    v_rho770_Mass.setFixed(true);
-    v_rho770_Width.setFixed(true);
-    v_rho1450_Mass.setFixed(true);
-    v_rho1450_Width.setFixed(true);
-    v_rho1700_Mass.setFixed(true);
-    v_rho1700_Width.setFixed(true);
+	    v_rho770_Mass.setFixed(true);
+	    v_rho770_Width.setFixed(true);
+	    v_rho1450_Mass.setFixed(true);
+	    v_rho1450_Width.setFixed(true);
+	    v_rho1700_Mass.setFixed(true);
+		v_rho1700_Width.setFixed(true);
 
-    //it is possible to initial variables above with random values in a range
-    //e.g. v_omega_real.setRandomValue(-0.0160 - 5*0.0009,-0.0160 + 5*0.0009)
-   
-    //Instatiation of resonances
-    auto omega = new Resonances::RBW("omega",v_omega_real,v_omega_img,v_omega_Mass,v_omega_Width,1,PAIR_12,true);
-    auto rho770 = new Resonances::RBW("rho770",v_rho770_real,v_rho770_img,v_rho770_Mass,v_rho770_Width,1,PAIR_12,true);
-    auto rho1450 = new Resonances::RBW("rho1450",v_rho1450_real,v_rho1450_img,v_rho1450_Mass,v_rho1450_Width,1,PAIR_12,true);
-    auto rho1700 = new Resonances::RBW("rho1700",v_rho1700_real,v_rho1700_img,v_rho1700_Mass,v_rho1700_Width,1,PAIR_12,true);    
-    auto f2_1270 = new Resonances::RBW("f2",v_f2_1270_real,v_f2_1270_img,v_f2_1270_Mass,v_f2_1270_Width,2,PAIR_12,true);
-    auto f0_980 = new Resonances::FLATTE("f0_980",v_f0_980_real,v_f0_980_img,v_f0_980_Mass,v_f0_980_GPP,v_f0_980_GKK,PAIR_12,true);
-    auto f0_980_RBW = new Resonances::RBW("f0_980_RBW",v_f0_980_real,v_f0_980_img,v_f0_980_Mass,v_f0_980_Width,(unsigned int)0,PAIR_12,true);
-    auto a0_980 = new Resonances::RBW("a0_980",v_a0_980_real,v_a0_980_img,v_a0_980_Mass,v_a0_980_Width,(unsigned int)0,PAIR_12,true);
-    auto f0_1370 = new Resonances::RBW("f0_1370_12",v_f0_1370_real,v_f0_1370_img,v_f0_1370_Mass,v_f0_1370_Width,(unsigned int)0,PAIR_12,true);
-    auto f0_1500 = new Resonances::RBW("f0_1500_12",v_f0_1500_real,v_f0_1500_img,v_f0_1500_Mass,v_f0_1500_Width,(unsigned int)0,PAIR_12,true);  
-    auto nonr = new Resonances::NonRes("nonr", nonr_real, nonr_imag);
-    auto BEC   = new Resonances::BoseEinstein("be",be_real,be_imag,be_coef,be_delta);
+	    //it is possible to initial variables above with random values in a range
+	    //e.g. v_omega_real.setRandomValue(-0.0160 - 5*0.0009,-0.0160 + 5*0.0009)
+	   
+	    //Instatiation of resonances
+	    auto omega = new Resonances::GS("omega",v_omega_real,v_omega_img,v_omega_Mass,v_omega_Width,1,PAIR_12,true);
+	    auto rho770 = new Resonances::GS("rho770",v_rho770_real,v_rho770_img,v_rho770_Mass,v_rho770_Width,1,PAIR_12,true);
+	    auto rho1450 = new Resonances::GS("rho1450",v_rho1450_real,v_rho1450_img,v_rho1450_Mass,v_rho1450_Width,1,PAIR_12,true);
+	    auto rho1700 = new Resonances::GS("rho1700",v_rho1700_real,v_rho1700_img,v_rho1700_Mass,v_rho1700_Width,1,PAIR_12,true);    
+	    auto f2_1270 = new Resonances::RBW("f2",v_f2_1270_real,v_f2_1270_img,v_f2_1270_Mass,v_f2_1270_Width,2,PAIR_12,true);
+	    auto f0_980 = new Resonances::FLATTE("f0_980",v_f0_980_real,v_f0_980_img,v_f0_980_Mass,v_f0_980_GPP,v_f0_980_GKK,PAIR_12,true);
+	    auto f0_980_RBW = new Resonances::RBW("f0_980_RBW",v_f0_980_real,v_f0_980_img,v_f0_980_Mass,v_f0_980_Width,(unsigned int)0,PAIR_12,true);
+	    auto a0_980 = new Resonances::RBW("a0_980",v_a0_980_real,v_a0_980_img,v_a0_980_Mass,v_a0_980_Width,(unsigned int)0,PAIR_12,true);
+	    auto f0_1370 = new Resonances::RBW("f0_1370_12",v_f0_1370_real,v_f0_1370_img,v_f0_1370_Mass,v_f0_1370_Width,(unsigned int)0,PAIR_12,true);
+	    auto f0_1500 = new Resonances::RBW("f0_1500_12",v_f0_1500_real,v_f0_1500_img,v_f0_1500_Mass,v_f0_1500_Width,(unsigned int)0,PAIR_12,true);  
+	    auto nonr = new Resonances::NonRes("nonr", nonr_real, nonr_imag);
+	    auto BEC   = new Resonances::BoseEinstein("be",be_real,be_imag,be_coef,be_delta);
 
-    //MIPWA
-    ResonancePdf *MIPWA = loadPWAResonance(pwa_file, true);
+	    //MIPWA
+	    ResonancePdf *MIPWA = loadPWAResonance(pwa_file, true);
 
-    //If you want include a resonance in your model, just push into the vector 'vec_resonances'
-    std::vector<ResonancePdf *> vec_resonances;
-   
-    vec_resonances.push_back(omega); 
-    vec_resonances.push_back(rho770); 
-    vec_resonances.push_back(rho1450);
-    vec_resonances.push_back(rho1700);
-    vec_resonances.push_back(f2_1270);
-    vec_resonances.push_back(BEC);
-    vec_resonances.push_back(MIPWA);
+	    //If you want include a resonance in your model, just push into the vector 'vec_resonances'
+	    std::vector<ResonancePdf *> vec_resonances;
+	   
+	    vec_resonances.push_back(omega); 
+	    vec_resonances.push_back(rho770); 
+	    vec_resonances.push_back(rho1450);
+	    vec_resonances.push_back(rho1700);
+	    vec_resonances.push_back(f2_1270);
+	    //vec_resonances.push_back(BEC);
+	    vec_resonances.push_back(MIPWA);
 
-    //not included
-    //vec_resonances.push_back(a0_980);
-    //vec_resonances.push_back(f0_980);
-    //vec_resonances.push_back(f0_Mix);
-    //vec_resonances.push_back(f0_1500);
-    //vec_resonances.push_back(f0_1370);
-    //vec_resonances.push_back(nonr);
+	    //not included
+	    //vec_resonances.push_back(a0_980);
+	    //vec_resonances.push_back(f0_980);
+	    //vec_resonances.push_back(f0_Mix);
+	    //vec_resonances.push_back(f0_1500);
+	    //vec_resonances.push_back(f0_1370);
+	    //vec_resonances.push_back(nonr);
 
-    dtoppp.resonances = vec_resonances;
+	    dtoppp.resonances = vec_resonances;
 
     if(!eff)
         eff = polyEff(s12,s13);
@@ -494,15 +493,15 @@ void getData(std::string toyFileName, GooFit::Application &app, DataSet &data, b
         s12.setValue(s12_val);
         s13.setValue(s13_val);
         eventNumber.setValue(data.getNumEvents());
-        if((s12.getValue()<3.31)
-            &&(s13.getValue()<3.31)
+        if((s12.getValue()<s12.getUpperLimit())
+            &&(s13.getValue()<s13.getUpperLimit())
             &&(s12.getValue()>s12.getLowerLimit())
             &&(s13.getValue()>s13.getLowerLimit()))
         {
             data.addEvent();
             if(j<10) printf("[%d] = (%f , %f)\n",i,s12.getValue(),s13.getValue());
             j++;
-            //if(!toy  &&  data.getNumEvents()==200000) break; 
+            //if(!toy  &&  data.getNumEvents()==290000) break; 
         }
     }
 
@@ -554,7 +553,7 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
     datapdf.setVerbosity(2);
     datapdf.setMaxCalls(200000);
     datapdf.setTolerance(0.1);
-
+    
     //run the fit
     auto func_min = datapdf.fit();
 
@@ -669,13 +668,16 @@ int main(int argc, char **argv){
     
     std::string input_data_name = "input.root";
     std::string fit_name = "Fit";
+	std::string acc_file = "acc_hist_0_Smoothed.root";
     bool save_toy = false;
     bool is_toy = false;
+
     auto fit = app.add_subcommand("fit","fit data");
     fit->add_option("-f,--file",input_data_name,"name_of_file.root");
     fit->add_option("-t,--isToy", is_toy, "Get toyData for fit") ;
     fit->add_option("-s,--saveToy",save_toy,"save toy in root file");
     fit->add_option("-n,--fitName",fit_name,"name of this fit(useful to save results)")->required(true);
+	fit->add_option("-a,--acc",acc_file,"name of acc file")->required(true);
    
     size_t Nevents=1000000;
     std::string toyName = "MC.root";
@@ -719,16 +721,27 @@ int main(int argc, char **argv){
     s12.setNumBins(bins);
     s13.setNumBins(bins);
 
-    const string bkgfile = "/home/juan/juan/work/dados/bkg_15_bw_Smoothed.root";
-    const string efffile = "/home/juan/juan/work/dados/acc_15_Smoothed.root";
+    const string bkgfile = "/home/juan/juan/work/dados/bkg_16_bw_Smoothed_93.root";
+    //const string efffile = "/home/juan/juan/work/dados/acc_15_Smoothed_93.root";
+
+	const string efffile = "/home/juan/juan/work/dados/AccStudy/" + acc_file;
+
+	std::cout << "using acc " << efffile << '\n';
+
+	//const string bkgfile = "/home/juan/juan/work/dados/bkg_16_bw_Smoothed_95.root";
+    //const string efffile = "/home/juan/juan/work/dados/acc_15_Smoothed_95.root";
+
+	//const string bkgfile = "/home/juan/juan/work/dados/newOldFiles/bkgBW_16_BDT0.18_Smoothed.root";
+    //const string efffile = "/home/juan/juan/work/dados/newOldFiles/acc_15_MC_TIS_RW_BDT0.18_SigRegion_Smoothed.root";
+
     const string bkghist = "h_eff";
     const string effhist = "h_eff";
 
-    auto efficiency = makeHistogramPdf(efffile,effhist,s12,s13,true,true,false);
-    auto background = makeHistogramPdf(bkgfile,bkghist,s12,s13,false,true,false);
+    auto efficiency = makeHistogramPdf(efffile,effhist,s12,s13,true,false,false);
+    auto background = makeHistogramPdf(bkgfile,bkghist,s12,s13,false,false,false);
     auto signal = makesignalpdf(s12, s13, eventNumber,efficiency);
     
-    AddPdf *prodpdf = new AddPdf("prodpdf", Variable("frac",0.95), signal, background) ;
+    AddPdf *prodpdf = new AddPdf("prodpdf", Variable("frac",0.93), signal, background) ;
 
     if(*makeToy) {
 	DalitzPlotter dplotter{prodpdf, signal};
@@ -739,7 +752,7 @@ int main(int argc, char **argv){
         std::cout << "----------------------------------------------------------" << std::endl;
         if(save_toy) {
 		auto fullName= fmt::format("MC/{0}",toyName);
-        	to_root(data,fullName);
+        	to_root(data,fullName); 
 		std::cout <<   toyName << " root file was saved in MC folder" << std::endl;
         	std::cout << "----------------------------------------------------------" << std::endl;
         }
