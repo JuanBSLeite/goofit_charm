@@ -724,7 +724,7 @@ int main(int argc, char **argv){
     const string bkgfile = "/home/juan/juan/work/dados/bkg_16_bw_Smoothed_93.root";
     //const string efffile = "/home/juan/juan/work/dados/acc_15_Smoothed_93.root";
 
-	const string efffile = "/home/juan/juan/work/dados/AccStudy/" + acc_file;
+	const string efffile = "/home/juan/juan/work/IncertezaDaEficiencia/" + acc_file;
 
 	std::cout << "using acc " << efffile << '\n';
 
