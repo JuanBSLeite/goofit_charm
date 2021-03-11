@@ -314,20 +314,20 @@
 	    double rho1450_WIDTH  = 0.4 ;
 	    double rho1450_amp    = 0.159456;
 	    double rho1450_img  =  -0.896579;
-	    double rho1450_MASS_lower    = rho1450_MASS - 2*0.1;
-	    double rho1450_MASS_upper  =  rho1450_MASS + 2*0.1;
-	    double rho1450_WIDTH_lower    = rho1450_WIDTH - 2*0.1;
-	    double rho1450_WIDTH_upper  =  rho1450_WIDTH + 2*0.1;
+	    double rho1450_MASS_lower    = rho1450_MASS - 5*0.025;
+	    double rho1450_MASS_upper  =  rho1450_MASS + 5*0.025;
+	    double rho1450_WIDTH_lower    = rho1450_WIDTH - 5*0.06;
+	    double rho1450_WIDTH_upper  =  rho1450_WIDTH + 5*0.06;
 
 	    //From PDG 2020 
 	    double rho1700_MASS   = 1.720 ;
 	    double rho1700_WIDTH  = 0.25 ;
 	    double rho1700_amp    = 0.464466;
 	    double rho1700_img  = -3.61572;
-	    double rho1700_MASS_lower    = rho1700_MASS + 2*0.1;
-	    double rho1700_MASS_upper  =  rho1700_MASS + 2*0.1;
-	    double rho1700_WIDTH_lower    = rho1700_WIDTH + 2*0.1;
-	    double rho1700_WIDTH_upper  =  rho1700_WIDTH + 2*0.1;
+	    double rho1700_MASS_lower    = rho1700_MASS - 5*0.02;
+	    double rho1700_MASS_upper  =  rho1700_MASS + 5*0.02;
+	    double rho1700_WIDTH_lower    = rho1700_WIDTH - 1*0.1;
+	    double rho1700_WIDTH_upper  =  rho1700_WIDTH + 5*0.1;
 
 	    //From PDG 2020 - ABLIKIM
 	    double f2_1270_MASS     = 1.2751;
@@ -558,7 +558,7 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
     auto func_min = datapdf.fit();
 
     //convert to mag and phase
-    datapdf.printParams();
+    datapdf.printParams(fmt::format("Fit/{0}/fit_result_mag_phase.txt",name.c_str()));
 
     //save external state user parameters after fit
 	//here include Const and Free parameters
@@ -677,7 +677,7 @@ int main(int argc, char **argv){
     fit->add_option("-t,--isToy", is_toy, "Get toyData for fit") ;
     fit->add_option("-s,--saveToy",save_toy,"save toy in root file");
     fit->add_option("-n,--fitName",fit_name,"name of this fit(useful to save results)")->required(true);
-	fit->add_option("-a,--acc",acc_file,"name of acc file")->required(true);
+	fit->add_option("-a,--acc",acc_file,"name of acc file");
    
     size_t Nevents=1000000;
     std::string toyName = "MC.root";
@@ -722,9 +722,9 @@ int main(int argc, char **argv){
     s13.setNumBins(bins);
 
     const string bkgfile = "/home/juan/juan/work/dados/bkg_16_bw_Smoothed_93.root";
-    //const string efffile = "/home/juan/juan/work/dados/acc_15_Smoothed_93.root";
+    const string efffile = "/home/juan/juan/work/dados/acc_15_Smoothed_93.root";
 
-	const string efffile = "/home/juan/juan/work/IncertezaDaEficiencia/" + acc_file;
+	//const string efffile = "/home/juan/juan/work/IncertezaDaEficiencia/" + acc_file;
 
 	std::cout << "using acc " << efffile << '\n';
 
