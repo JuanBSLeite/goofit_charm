@@ -409,6 +409,15 @@
 	    Variable be_coef("be_RCOEF",1.5);
 	    Variable be_delta("be_RDELTA",0.);//73.e-3);
 
+        v_rho1450_Mass.setRandomValue(rho1450_MASS - 5*0.025, rho1450_MASS + 5*0.025);
+        v_rho1450_Width.setRandomValue(rho1450_WIDTH - 5*0.06, rho1450_WIDTH + 5*0.06);
+        v_rho1700_Mass.setRandomValue(rho1700_MASS - 5*0.02, rho1700_MASS + 5*0.02);
+        v_rho1700_Width.setRandomValue(rho1700_WIDTH - 1*0.1, rho1700_WIDTH + 5*0.1);
+
+        std::cout << fmt::format("Rho770: mass={} width={}",v_rho770_Mass.getValue(),v_rho770_Width.getValue()) << '\n';
+        std::cout << fmt::format("Rho1450: mass={} width={}",v_rho1450_Mass.getValue(),v_rho1450_Width.getValue()) << '\n';
+        std::cout << fmt::format("Rho1700: mass={} width={}",v_rho1700_Mass.getValue(),v_rho1700_Width.getValue()) << '\n';
+
 	    v_rho770_Mass.setFixed(true);
 	    v_rho770_Width.setFixed(true);
 	    v_rho1450_Mass.setFixed(true);
