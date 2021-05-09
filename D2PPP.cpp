@@ -75,7 +75,7 @@
 	const int bins = 500;
 
 	//N Bins for eff and bkg scanning
-	const int bins_eff_bkg = 2000;
+	const int bins_eff_bkg = 500;
 
 	//Dalitz Limits
 	fptype s12_min = POW2(d1_MASS  + d2_MASS);
@@ -409,21 +409,21 @@
 	    Variable be_coef("be_RCOEF",1.5);
 	    Variable be_delta("be_RDELTA",0.);//73.e-3);
 
-        v_rho1450_Mass.setRandomValue(rho1450_MASS - 5*0.025, rho1450_MASS + 5*0.025);
-        v_rho1450_Width.setRandomValue(rho1450_WIDTH - 5*0.06, rho1450_WIDTH + 5*0.06);
-        v_rho1700_Mass.setRandomValue(rho1700_MASS - 5*0.02, rho1700_MASS + 5*0.02);
-        v_rho1700_Width.setRandomValue(rho1700_WIDTH - 1*0.1, rho1700_WIDTH + 5*0.1);
+        //v_rho1450_Mass.setRandomValue(rho1450_MASS - 5*0.025, rho1450_MASS + 5*0.025);
+        //v_rho1450_Width.setRandomValue(rho1450_WIDTH - 5*0.06, rho1450_WIDTH + 5*0.06);
+        //v_rho1700_Mass.setRandomValue(rho1700_MASS - 5*0.02, rho1700_MASS + 5*0.02);
+        //v_rho1700_Width.setRandomValue(rho1700_WIDTH - 1*0.1, rho1700_WIDTH + 5*0.1);
 
         std::cout << fmt::format("Rho770: mass={} width={}",v_rho770_Mass.getValue(),v_rho770_Width.getValue()) << '\n';
         std::cout << fmt::format("Rho1450: mass={} width={}",v_rho1450_Mass.getValue(),v_rho1450_Width.getValue()) << '\n';
         std::cout << fmt::format("Rho1700: mass={} width={}",v_rho1700_Mass.getValue(),v_rho1700_Width.getValue()) << '\n';
 
-	    v_rho770_Mass.setFixed(true);
-	    v_rho770_Width.setFixed(true);
-	    v_rho1450_Mass.setFixed(true);
-	    v_rho1450_Width.setFixed(true);
-	    v_rho1700_Mass.setFixed(true);
-		v_rho1700_Width.setFixed(true);
+	v_rho770_Mass.setFixed(true);
+	v_rho770_Width.setFixed(true);
+	v_rho1450_Mass.setFixed(true);
+	v_rho1450_Width.setFixed(true);
+	v_rho1700_Mass.setFixed(true);
+	v_rho1700_Width.setFixed(true);
 
 	    //it is possible to initial variables above with random values in a range
 	    //e.g. v_omega_real.setRandomValue(-0.0160 - 5*0.0009,-0.0160 + 5*0.0009)
@@ -566,6 +566,27 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
     //run the fit
     auto func_min = datapdf.fit();
 
+    std::cout << "Minuit cov mat" << '\n';
+    //datapdf.printCovMat() ;
+    auto param = datapdf.getParams()->Parameters(); 
+    auto covMatrix = func_min.UserState().Covariance().Data();
+    Eigen::MatrixXd m(param.size(),param.size());
+
+        for(int i=0; i<param.size(); i++){
+                for(int j=0; j<param.size(); j++){
+                        //if(i==0 && j<10){
+                        //cout << covMatrix[i + j];
+                        //}
+                        if(i>j){
+                                m(i,j) = covMatrix[j + i*(i+1)/2];
+                        }else{
+                                m(i,j) = covMatrix[i + j*(j+1)/2];
+                        }
+                        if(abs(m(i,j))<1e-30){ m(i,j)=0;}
+                }
+        }
+
+//    std::cout << m << '\n';
     //convert to mag and phase
     datapdf.printParams(fmt::format("Fit/{0}/fit_result_mag_phase.txt",name.c_str()));
 
@@ -581,7 +602,7 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
 
 	//getting the number of free parameters for covMatrix and chi2
 	size_t npar = 0; 
-	auto param = datapdf.getParams()->Parameters();
+	//auto param = datapdf.getParams()->Parameters();
     for(size_t i = 0; i < param.size(); i++){
         if(!param[i].IsConst()){
             npar++;	
@@ -730,18 +751,10 @@ int main(int argc, char **argv){
     s12.setNumBins(bins);
     s13.setNumBins(bins);
 
-    const string bkgfile = "/home/juan/juan/work/dados/bkg_16_bw_Smoothed_93.root";
-    const string efffile = "/home/juan/juan/work/dados/acc_15_Smoothed_93.root";
+    const string bkgfile = "/home/juan/juan/work/DsPPP_Analysis/7-AccAndBkg/bkg_hist_15_Smoothed_bw.root";
+    const string efffile = "/home/juan/juan/work/DsPPP_Analysis/7-AccAndBkg/acc_hist_15_Smoothed.root";
 
-	//const string efffile = "/home/juan/juan/work/IncertezaDaEficiencia/" + acc_file;
-
-	std::cout << "using acc " << efffile << '\n';
-
-	//const string bkgfile = "/home/juan/juan/work/dados/bkg_16_bw_Smoothed_95.root";
-    //const string efffile = "/home/juan/juan/work/dados/acc_15_Smoothed_95.root";
-
-	//const string bkgfile = "/home/juan/juan/work/dados/newOldFiles/bkgBW_16_BDT0.18_Smoothed.root";
-    //const string efffile = "/home/juan/juan/work/dados/newOldFiles/acc_15_MC_TIS_RW_BDT0.18_SigRegion_Smoothed.root";
+    std::cout << "using acc " << efffile << '\n';
 
     const string bkghist = "h_eff";
     const string effhist = "h_eff";
@@ -750,7 +763,7 @@ int main(int argc, char **argv){
     auto background = makeHistogramPdf(bkgfile,bkghist,s12,s13,false,false,false);
     auto signal = makesignalpdf(s12, s13, eventNumber,efficiency);
     
-    AddPdf *prodpdf = new AddPdf("prodpdf", Variable("frac",0.93), signal, background) ;
+    AddPdf *prodpdf = new AddPdf("prodpdf", Variable("frac",0.94), signal, background) ;
 
     if(*makeToy) {
 	DalitzPlotter dplotter{prodpdf, signal};
