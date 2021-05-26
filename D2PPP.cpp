@@ -751,7 +751,7 @@ int main(int argc, char **argv){
     s12.setNumBins(bins);
     s13.setNumBins(bins);
 
-    const string bkgfile = "/home/juan/juan/work/DsPPP_Analysis/7-AccAndBkg/bkg_hist_15_Smoothed_bw.root";
+    const string bkgfile = "/home/juan/juan/work/DsPPP_Analysis/7-AccAndBkg/bkg_hist_15_Smoothed.root";
     const string efffile = "/home/juan/juan/work/DsPPP_Analysis/7-AccAndBkg/acc_hist_15_Smoothed.root";
 
     std::cout << "using acc " << efffile << '\n';
@@ -763,7 +763,7 @@ int main(int argc, char **argv){
     auto background = makeHistogramPdf(bkgfile,bkghist,s12,s13,false,false,false);
     auto signal = makesignalpdf(s12, s13, eventNumber,efficiency);
     
-    AddPdf *prodpdf = new AddPdf("prodpdf", Variable("frac",0.94), signal, background) ;
+    AddPdf *prodpdf = new AddPdf("prodpdf", Variable("frac",0.93), signal, background) ;
 
     if(*makeToy) {
 	DalitzPlotter dplotter{prodpdf, signal};
