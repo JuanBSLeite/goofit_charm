@@ -72,10 +72,10 @@
 	Variable Daughter3_Mass("Daughter3_Mass",d3_MASS);
 
 	//Bins for grid normalization
-	const int bins = 500;
+	const int bins = 1000;
 
 	//N Bins for eff and bkg scanning
-	const int bins_eff_bkg = 500;
+	const int bins_eff_bkg = 2000;
 
 	//Dalitz Limits
 	fptype s12_min = POW2(d1_MASS  + d2_MASS);
@@ -296,14 +296,14 @@
 	    //from PDG 2020
 	    double omega_MASS   = 0.78265;
 	    double omega_WIDTH  = 0.00849;
-	    double omega_amp    = -0.0162902;
-	    double omega_img  = 0.00577515;
+	    double omega_amp    = -0.0175989;
+	    double omega_img  = 0.00655871;
 
 	    //From PDG 2020 CHARGED ONLY, HADROPRODUCED
 	    double rho770_MASS   = 0.77549;
 	    double rho770_WIDTH  = 0.1491;
-	    double rho770_amp    = 0.0737078;
-	    double rho770_img  =  0.129987;
+	    double rho770_amp    = 0.0365615;
+	    double rho770_img  =  0.103797;
 	    double rho770_MASS_lower    = rho770_MASS - 2*0.01;
 	    double rho770_MASS_upper  =  rho770_MASS + 2*0.01;
 	    double rho770_WIDTH_lower    = rho770_WIDTH - 2*0.06;
@@ -312,22 +312,22 @@
 	    //From PDG 2020
 	    double rho1450_MASS   = 1.465 ;
 	    double rho1450_WIDTH  = 0.4 ;
-	    double rho1450_amp    = 0.159456;
-	    double rho1450_img  =  -0.896579;
-	    double rho1450_MASS_lower    = rho1450_MASS - 5*0.025;
-	    double rho1450_MASS_upper  =  rho1450_MASS + 5*0.025;
-	    double rho1450_WIDTH_lower    = rho1450_WIDTH - 5*0.06;
-	    double rho1450_WIDTH_upper  =  rho1450_WIDTH + 5*0.06;
+	    double rho1450_amp    = 0.12908;
+	    double rho1450_img  =  -1.35989;
+	    double rho1450_MASS_lower    = 1.1;//rho1450_MASS - 5*0.025;
+	    double rho1450_MASS_upper  =  1.8;//rho1450_MASS + 5*0.025;
+	    double rho1450_WIDTH_lower    = 0.01;//rho1450_WIDTH - 5*0.06;
+	    double rho1450_WIDTH_upper  =  0.8;//rho1450_WIDTH + 5*0.06;
 
 	    //From PDG 2020 
 	    double rho1700_MASS   = 1.720 ;
 	    double rho1700_WIDTH  = 0.25 ;
-	    double rho1700_amp    = 0.464466;
-	    double rho1700_img  = -3.61572;
-	    double rho1700_MASS_lower    = rho1700_MASS - 5*0.02;
-	    double rho1700_MASS_upper  =  rho1700_MASS + 5*0.02;
-	    double rho1700_WIDTH_lower    = rho1700_WIDTH - 1*0.1;
-	    double rho1700_WIDTH_upper  =  rho1700_WIDTH + 5*0.1;
+	    double rho1700_amp    = -0.0707129;
+	    double rho1700_img  = -1.86331;
+	    double rho1700_MASS_lower    = 1.4;//rho1700_MASS - 5*0.02;
+	    double rho1700_MASS_upper  =  2.0;//rho1700_MASS + 5*0.02;
+	    double rho1700_WIDTH_lower    = 0.1;//rho1700_WIDTH - 1*0.1;
+	    double rho1700_WIDTH_upper  =  0.8;//rho1700_WIDTH + 5*0.1;
 
 	    //From PDG 2020 - ABLIKIM
 	    double f2_1270_MASS     = 1.2751;
@@ -406,7 +406,7 @@
 	    //Bose-Einstein - Parameter R from CMS paper
 	    Variable be_real("be_REAL",0.,0.01,0,0);
 	    Variable be_imag("be_IMAG",0.,0.01,0,0);
-	    Variable be_coef("be_RCOEF",1.5);
+	    Variable be_coef("be_RCOEF",1.0);
 	    Variable be_delta("be_RDELTA",0.);//73.e-3);
 
         //v_rho1450_Mass.setRandomValue(rho1450_MASS - 5*0.025, rho1450_MASS + 5*0.025);
@@ -453,7 +453,7 @@
 	    vec_resonances.push_back(rho1450);
 	    vec_resonances.push_back(rho1700);
 	    vec_resonances.push_back(f2_1270);
-	    //vec_resonances.push_back(BEC);
+	    vec_resonances.push_back(BEC);
 	    vec_resonances.push_back(MIPWA);
 
 	    //not included
