@@ -453,7 +453,7 @@
 	    vec_resonances.push_back(rho1450);
 	    vec_resonances.push_back(rho1700);
 	    vec_resonances.push_back(f2_1270);
-	    vec_resonances.push_back(BEC);
+	    //vec_resonances.push_back(BEC);
 	    vec_resonances.push_back(MIPWA);
 
 	    //not included
