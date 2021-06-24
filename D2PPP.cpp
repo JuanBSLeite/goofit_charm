@@ -275,24 +275,6 @@
 	    double f0_980_amp     = 1.;
 	    double f0_980_img     = 0.0;
 
-	    //from PDG
-	    double a0_980_MASS    = 0.980 ;
-	    double a0_980_WIDTH   = 0.05;
-	    double a0_980_amp     = 1.0;
-	    double a0_980_img     = 0.0;
-	    
-	    //from E791 paper
-	    double f0_1370_MASS  = 1.4;
-	    double f0_1370_WIDTH = 0.3;
-	    double f0_1370_amp   = -0.8357;
-	    double f0_1370_img = -0.5730;
-
-	    //from PDG
-	    double f0_1500_MASS  = 1.505;
-	    double f0_1500_WIDTH = .109;
-	    double f0_1500_amp   = 1.;
-	    double f0_1500_img = 0.;
-
 	    //from PDG 2020
 	    double omega_MASS   = 0.78265;
 	    double omega_WIDTH  = 0.00849;
@@ -378,30 +360,8 @@
 	    Variable v_f0_980_GPP("f0_980_GPP",f0_980_GPP);
 	    Variable v_f0_980_GKK("f0_980_GKK",f0_980_GKK);
 	    Variable v_f0_980_Width("f0_980_WIDTH",f0_980_WIDTH);
-	    Variable v_f0_980_real("f0_980_REAL",f0_980_amp);
-	    Variable v_f0_980_img("f0_980_IMAG",f0_980_img);
-
-	    //a0(980)
-	    Variable v_a0_980_Mass("a0_980_MASS",a0_980_MASS);
-	    Variable v_a0_980_Width("a0_980_WIDTH",a0_980_WIDTH);
-	    Variable v_a0_980_real("a0_980_REAL",a0_980_amp,0.01,0,0);
-	    Variable v_a0_980_img("a0_980_REAL",a0_980_img, 0.01,0,0);
-	    
-	    //f0(1370)
-	    Variable v_f0_1370_Mass("f0_1370_MASS",f0_1370_MASS,0.1,1.2,1.6);
-	    Variable v_f0_1370_Width("f0_1370_WIDTH",f0_1370_WIDTH,0.1,0.1,0.6);
-	    Variable v_f0_1370_real("f0_1370_REAL",f0_1370_amp,0.01,0,0);
-	    Variable v_f0_1370_img("f0_1370_IMAG",f0_1370_img,0.01,0,0);
-
-	    //f0(1500)
-	    Variable v_f0_1500_Mass("f0_1500_MASS",f0_1500_MASS);
-	    Variable v_f0_1500_Width("f0_1500_WIDTH",f0_1500_WIDTH);
-	    Variable v_f0_1500_real("f0_1500_REAL",f0_1500_amp, 0.01,0,0);
-	    Variable v_f0_1500_img("f0_1500_IMAG",f0_1500_img, 0.01, 0,0);
-
-	    //NR
-	    Variable nonr_real("nonr_REAL",1., 0.01,0,0);
-	    Variable nonr_imag("nonr_IMAG",0., 0.01,0,0);
+	    Variable v_f0_980_real("f0_980_REAL",f0_980_amp,0.01,0,0);
+	    Variable v_f0_980_img("f0_980_IMAG",f0_980_img,0.01,0,0);
 
 	    //Bose-Einstein - Parameter R from CMS paper
 	    Variable be_real("be_REAL",0.,0.01,0,0);
@@ -420,28 +380,29 @@
 
 	v_rho770_Mass.setFixed(true);
 	v_rho770_Width.setFixed(true);
-	//v_rho1450_Mass.setFixed(true);
-	//v_rho1450_Width.setFixed(true);
-	//v_rho1700_Mass.setFixed(true);
-	//v_rho1700_Width.setFixed(true);
+	v_rho1450_Mass.setFixed(true);
+	v_rho1450_Width.setFixed(true);
+	v_rho1700_Mass.setFixed(true);
+	v_rho1700_Width.setFixed(true);
 
 	    //it is possible to initial variables above with random values in a range
 	    //e.g. v_omega_real.setRandomValue(-0.0160 - 5*0.0009,-0.0160 + 5*0.0009)
 	   
 	    //Instatiation of resonances
-	    auto omega = new Resonances::RBW("omega",v_omega_real,v_omega_img,v_omega_Mass,v_omega_Width,1,PAIR_12,true);
-	    auto rho770 = new Resonances::GS("rho770",v_rho770_real,v_rho770_img,v_rho770_Mass,v_rho770_Width,1,PAIR_12,true);
-	    auto rho1450 = new Resonances::GS("rho1450",v_rho1450_real,v_rho1450_img,v_rho1450_Mass,v_rho1450_Width,1,PAIR_12,true);
-	    auto rho1700 = new Resonances::GS("rho1700",v_rho1700_real,v_rho1700_img,v_rho1700_Mass,v_rho1700_Width,1,PAIR_12,true);    
-	    auto f2_1270 = new Resonances::RBW("f2",v_f2_1270_real,v_f2_1270_img,v_f2_1270_Mass,v_f2_1270_Width,2,PAIR_12,true);
-	    auto f0_980 = new Resonances::FLATTE("f0_980",v_f0_980_real,v_f0_980_img,v_f0_980_Mass,v_f0_980_GPP,v_f0_980_GKK,PAIR_12,true);
-	    auto f0_980_RBW = new Resonances::RBW("f0_980_RBW",v_f0_980_real,v_f0_980_img,v_f0_980_Mass,v_f0_980_Width,(unsigned int)0,PAIR_12,true);
-	    auto a0_980 = new Resonances::RBW("a0_980",v_a0_980_real,v_a0_980_img,v_a0_980_Mass,v_a0_980_Width,(unsigned int)0,PAIR_12,true);
-	    auto f0_1370 = new Resonances::RBW("f0_1370_12",v_f0_1370_real,v_f0_1370_img,v_f0_1370_Mass,v_f0_1370_Width,(unsigned int)0,PAIR_12,true);
-	    auto f0_1500 = new Resonances::RBW("f0_1500_12",v_f0_1500_real,v_f0_1500_img,v_f0_1500_Mass,v_f0_1500_Width,(unsigned int)0,PAIR_12,true);  
-	    auto nonr = new Resonances::NonRes("nonr", nonr_real, nonr_imag);
+	    
+	    auto omega = new Resonances::RBW("omega",v_omega_real,v_omega_img,v_omega_Mass,v_omega_Width,1,PAIR_12,true,false);
+	    auto rho770 = new Resonances::GS("rho770",v_rho770_real,v_rho770_img,v_rho770_Mass,v_rho770_Width,1,PAIR_12,true,false);
+	    auto rho1450 = new Resonances::GS("rho1450",v_rho1450_real,v_rho1450_img,v_rho1450_Mass,v_rho1450_Width,1,PAIR_12,true,false);
+	    auto rho1700 = new Resonances::GS("rho1700",v_rho1700_real,v_rho1700_img,v_rho1700_Mass,v_rho1700_Width,1,PAIR_12,true,false);    
+	    auto f2_1270 = new Resonances::RBW("f2",v_f2_1270_real,v_f2_1270_img,v_f2_1270_Mass,v_f2_1270_Width,2,PAIR_12,true,false);
 	    auto BEC   = new Resonances::BoseEinstein("be",be_real,be_imag,be_coef,be_delta);
-
+	    
+	    /*auto omega = new Resonances::RBW("omega",v_omega_real,v_omega_img,v_omega_Mass,v_omega_Width,1,PAIR_12,true,true);
+	    auto rho770 = new Resonances::GS("rho770",v_rho770_real,v_rho770_img,v_rho770_Mass,v_rho770_Width,1,PAIR_12,true,true);
+	    auto rho1450 = new Resonances::GS("rho1450",v_rho1450_real,v_rho1450_img,v_rho1450_Mass,v_rho1450_Width,1,PAIR_12,true,true);
+	    auto rho1700 = new Resonances::GS("rho1700",v_rho1700_real,v_rho1700_img,v_rho1700_Mass,v_rho1700_Width,1,PAIR_12,true,true);    
+	    auto f2_1270 = new Resonances::RBW("f2",v_f2_1270_real,v_f2_1270_img,v_f2_1270_Mass,v_f2_1270_Width,2,PAIR_12,true,true);
+	    auto BEC   = new Resonances::BoseEinstein("be",be_real,be_imag,be_coef,be_delta);*/
 	    //MIPWA
 	    ResonancePdf *MIPWA = loadPWAResonance(pwa_file, false);
 
@@ -457,12 +418,7 @@
 	    vec_resonances.push_back(MIPWA);
 
 	    //not included
-	    //vec_resonances.push_back(a0_980);
 	    //vec_resonances.push_back(f0_980);
-	    //vec_resonances.push_back(f0_Mix);
-	    //vec_resonances.push_back(f0_1500);
-	    //vec_resonances.push_back(f0_1370);
-	    //vec_resonances.push_back(nonr);
 
 	    dtoppp.resonances = vec_resonances;
 
@@ -510,7 +466,7 @@ void getData(std::string toyFileName, GooFit::Application &app, DataSet &data, b
             data.addEvent();
             if(j<10) printf("[%d] = (%f , %f)\n",i,s12.getValue(),s13.getValue());
             j++;
-           // if(!toy  &&  data.getNumEvents()==100000) break; 
+//            if(!toy  &&  data.getNumEvents()==100000) break; 
         }
     }
 
@@ -731,6 +687,8 @@ int main(int argc, char **argv){
     s12.setNumBins(bins);
     s13.setNumBins(bins);
 
+    //const string bkgfile = "/home/juan/juan/work/DsPPP_Analysis/7-AccAndBkg/bkg_hist_15_95_uBoost_Smoothed.root";
+    //const string efffile = "/home/juan/juan/work/DsPPP_Analysis/7-AccAndBkg/acc_hist_15_95_uBoost_Smoothed.root";
     const string bkgfile = "/home/juan/juan/work/DsPPP_Analysis/7-AccAndBkg/bkg_hist_15_95_Smoothed.root";
     const string efffile = "/home/juan/juan/work/DsPPP_Analysis/7-AccAndBkg/acc_hist_15_95_Smoothed.root";
 
@@ -801,26 +759,31 @@ int main(int argc, char **argv){
 	signal->setDataSize(data.getNumEvents());
 
  	FitManager fitter(prodpdf);
-	fitter.setVerbosity(0);
+	fitter.setVerbosity(2);
         fitter.setMaxCalls(200000); 
-	fitter.setRandMinuitValues(100);
+	fitter.setRandMinuitValues(n_samples);
         
 	for(int i=0;i<n_samples;i++){
 		std::cout<< "################################################" << '\n';
 		std::cout<< "Fitting model " << fit_name << " sample " << i << '\n';
 		std::cout<< "################################################" << '\n';
-
-		command = fmt::format("mkdir -p Fit_Random/{0}/Sample_{1}",model_name,i);
-        	if(system(command.c_str()) != 0)
-                	throw GooFit::GeneralError("Making directory failed");
 		
 		fitter.loadSample(i);
-		//fitter.printOriginalParams();
+		fitter.printOriginalParams();
                 auto min = fitter.fit();
+
 		if(min.IsValid()){
 
+			command = fmt::format("mkdir -p Fit_Random/{0}/Sample_{1}",model_name,i);
+        			if(system(command.c_str()) != 0)
+
+                	throw GooFit::GeneralError("Making directory failed");
 			auto output = fmt::format("Fit_Random/{0}/Sample_{1}/fit_result.txt",model_name,i);
     			writeToFile(prodpdf, output.c_str());
+    			std::ofstream open(output,std::ios_base::app);
+    			open << "FCN" << "\t" << min.Fval() << "\t" << 0 << "\t" << 0 << "\t" << 0 << std::endl;
+    			open << "Status" << "\t" << min.IsValid() << "\t" << 0 << "\t" << 0 << "\t" << 0 << std::endl;
+    			open.close();
         		auto frac = signal->fit_fractions(4000);
         		ofstream wt(fmt::format("Fit_Random/{0}/Sample_{1}/fractions.txt",model_name,i));
         		std::cout << "Fit Fractions Interference" << '\n';
