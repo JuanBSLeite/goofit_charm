@@ -120,8 +120,8 @@
 		   HH_bin_limits.push_back(e1*e1); //MIPWA first input
 
 		   if(!polar){
-			    emag = e2*cos(e3);
-				ephs = e2*sin(e3);
+			    emag = e2;
+				ephs = e3;
 				//Instantiation of fit parameters for MIPWA
 				Variable va(fmt::format("pwa_coef_{}_real", i), emag,0.01,-100.0,+100.0);
 				Variable vp(fmt::format("pwa_coef_{}_imag", i), ephs,0.01,-100.0,+100.0);
@@ -278,14 +278,14 @@
 	    //from PDG 2020
 	    double omega_MASS   = 0.78265;
 	    double omega_WIDTH  = 0.00849;
-	    double omega_amp    = -0.0175989;
-	    double omega_img  = 0.00655871;
+	    double omega_amp    = -0.0177246;
+	    double omega_img  = 0.00561988;
 
 	    //From PDG 2020 CHARGED ONLY, HADROPRODUCED
 	    double rho770_MASS   = 0.77549;
 	    double rho770_WIDTH  = 0.1491;
-	    double rho770_amp    = 0.0365615;
-	    double rho770_img  =  0.103797;
+	    double rho770_amp    = 0.0201356;
+	    double rho770_img  =  0.126704;
 	    double rho770_MASS_lower    = rho770_MASS - 2*0.01;
 	    double rho770_MASS_upper  =  rho770_MASS + 2*0.01;
 	    double rho770_WIDTH_lower    = rho770_WIDTH - 2*0.06;
@@ -294,8 +294,8 @@
 	    //From PDG 2020
 	    double rho1450_MASS   = 1.465 ;
 	    double rho1450_WIDTH  = 0.4 ;
-	    double rho1450_amp    = 0.12908;
-	    double rho1450_img  =  -1.35989;
+	    double rho1450_amp    = -0.386495;
+	    double rho1450_img  =  -1.08171;
 	    double rho1450_MASS_lower    = 0.0;//rho1450_MASS - 5*0.025;
 	    double rho1450_MASS_upper  =  0.0;//1.8;//rho1450_MASS + 5*0.025;
 	    double rho1450_WIDTH_lower    = 0.0;//rho1450_WIDTH - 5*0.06;
@@ -304,8 +304,8 @@
 	    //From PDG 2020 
 	    double rho1700_MASS   = 1.720 ;
 	    double rho1700_WIDTH  = 0.25 ;
-	    double rho1700_amp    = -0.0707129;
-	    double rho1700_img  = -1.86331;
+	    double rho1700_amp    = 0.412741;
+	    double rho1700_img  = -0.860459;
 	    double rho1700_MASS_lower    = 0.0;//1.4;//rho1700_MASS - 5*0.02;
 	    double rho1700_MASS_upper  =  0.0;//2.0;//rho1700_MASS + 5*0.02;
 	    double rho1700_WIDTH_lower    = 0.0;//rho1700_WIDTH - 1*0.1;
@@ -351,8 +351,8 @@
 	    //f2(1270) Reference
 	    Variable v_f2_1270_Mass("f2_1270_MASS",f2_1270_MASS);
 	    Variable v_f2_1270_Width("f2_1270_WIDTH",f2_1270_WIDTH);
-	    Variable v_f2_1270_real("f2_1270_REAL",f2_1270_amp,0.1,0,0);
-	    Variable v_f2_1270_img("f2_1270_IMAG",f2_1270_img,0.1,0,0);
+	    Variable v_f2_1270_real("f2_1270_REAL",f2_1270_amp);
+	    Variable v_f2_1270_img("f2_1270_IMAG",f2_1270_img);
 
 	    //S-wave
 	    //f0(980)
@@ -380,10 +380,10 @@
 
 	v_rho770_Mass.setFixed(true);
 	v_rho770_Width.setFixed(true);
-	v_rho1450_Mass.setFixed(true);
-	v_rho1450_Width.setFixed(true);
-	v_rho1700_Mass.setFixed(true);
-	v_rho1700_Width.setFixed(true);
+	//v_rho1450_Mass.setFixed(true);
+	//v_rho1450_Width.setFixed(true);
+	//v_rho1700_Mass.setFixed(true);
+	//v_rho1700_Width.setFixed(true);
 
 	    //it is possible to initial variables above with random values in a range
 	    //e.g. v_omega_real.setRandomValue(-0.0160 - 5*0.0009,-0.0160 + 5*0.0009)
@@ -699,9 +699,9 @@ int main(int argc, char **argv){
 
     auto efficiency = makeHistogramPdf(efffile,effhist,s12,s13,true,false,false);
     auto background = makeHistogramPdf(bkgfile,bkghist,s12,s13,false,false,false);
-    auto signal = makesignalpdf(s12, s13, eventNumber,efficiency);
-    
+    auto signal = makesignalpdf(s12, s13, eventNumber,efficiency); 
     AddPdf *prodpdf = new AddPdf("prodpdf", Variable("frac",0.95),signal, background) ;
+    //readFromFile(prodpdf,"Fit/model1-parent/fit_results.txt");
 
     if(*makeToy) {
 	DalitzPlotter dplotter{prodpdf, signal};
