@@ -278,14 +278,14 @@
 	    //from PDG 2020
 	    double omega_MASS   = 0.78265;
 	    double omega_WIDTH  = 0.00849;
-	    double omega_amp    = -0.0177246;
-	    double omega_img  = 0.00561988;
+	    double omega_amp    = -0.0173295;
+	    double omega_img  = 0.00528296;
 
 	    //From PDG 2020 CHARGED ONLY, HADROPRODUCED
 	    double rho770_MASS   = 0.77549;
 	    double rho770_WIDTH  = 0.1491;
-	    double rho770_amp    = 0.0201356;
-	    double rho770_img  =  0.126704;
+	    double rho770_amp    = 0.0215937;
+	    double rho770_img  =  0.131332;
 	    double rho770_MASS_lower    = rho770_MASS - 2*0.01;
 	    double rho770_MASS_upper  =  rho770_MASS + 2*0.01;
 	    double rho770_WIDTH_lower    = rho770_WIDTH - 2*0.06;
@@ -294,8 +294,8 @@
 	    //From PDG 2020
 	    double rho1450_MASS   = 1.465 ;
 	    double rho1450_WIDTH  = 0.4 ;
-	    double rho1450_amp    = -0.386495;
-	    double rho1450_img  =  -1.08171;
+	    double rho1450_amp    = -0.304873;
+	    double rho1450_img  =  -1.09686;
 	    double rho1450_MASS_lower    = 0.0;//rho1450_MASS - 5*0.025;
 	    double rho1450_MASS_upper  =  0.0;//1.8;//rho1450_MASS + 5*0.025;
 	    double rho1450_WIDTH_lower    = 0.0;//rho1450_WIDTH - 5*0.06;
@@ -304,8 +304,8 @@
 	    //From PDG 2020 
 	    double rho1700_MASS   = 1.720 ;
 	    double rho1700_WIDTH  = 0.25 ;
-	    double rho1700_amp    = 0.412741;
-	    double rho1700_img  = -0.860459;
+	    double rho1700_amp    = 0.590158;
+	    double rho1700_img  = -1.12964;
 	    double rho1700_MASS_lower    = 0.0;//1.4;//rho1700_MASS - 5*0.02;
 	    double rho1700_MASS_upper  =  0.0;//2.0;//rho1700_MASS + 5*0.02;
 	    double rho1700_WIDTH_lower    = 0.0;//rho1700_WIDTH - 1*0.1;
