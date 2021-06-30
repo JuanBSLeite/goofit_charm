@@ -54,6 +54,12 @@
 	using namespace GooFit;
 	using namespace ROOT;
 
+	double rho1450_MASS   = 1.465 ;
+	double rho1450_WIDTH  = 0.4 ;
+
+	double rho1700_MASS   = 1.720 ;
+	double rho1700_WIDTH  = 0.25 ;
+
 
 	//Initial and final states parameters
 	double pi_MASS  = 0.13957018; 
@@ -292,8 +298,6 @@
 	    double rho770_WIDTH_upper  =  rho770_WIDTH + 2*0.06;
 
 	    //From PDG 2020
-	    double rho1450_MASS   = 1.465 ;
-	    double rho1450_WIDTH  = 0.4 ;
 	    double rho1450_amp    = -0.304873;
 	    double rho1450_img  =  -1.09686;
 	    double rho1450_MASS_lower    = 0.0;//rho1450_MASS - 5*0.025;
@@ -302,8 +306,6 @@
 	    double rho1450_WIDTH_upper  =  0.0;//rho1450_WIDTH + 5*0.06;
 
 	    //From PDG 2020 
-	    double rho1700_MASS   = 1.720 ;
-	    double rho1700_WIDTH  = 0.25 ;
 	    double rho1700_amp    = 0.590158;
 	    double rho1700_img  = -1.12964;
 	    double rho1700_MASS_lower    = 0.0;//1.4;//rho1700_MASS - 5*0.02;
@@ -380,10 +382,10 @@
 
 	v_rho770_Mass.setFixed(true);
 	v_rho770_Width.setFixed(true);
-	//v_rho1450_Mass.setFixed(true);
-	//v_rho1450_Width.setFixed(true);
-	//v_rho1700_Mass.setFixed(true);
-	//v_rho1700_Width.setFixed(true);
+	v_rho1450_Mass.setFixed(true);
+	v_rho1450_Width.setFixed(true);
+	v_rho1700_Mass.setFixed(true);
+	v_rho1700_Width.setFixed(true);
 
 	    //it is possible to initial variables above with random values in a range
 	    //e.g. v_omega_real.setRandomValue(-0.0160 - 5*0.0009,-0.0160 + 5*0.0009)
@@ -636,7 +638,11 @@ int main(int argc, char **argv){
     fit->add_option("-t,--isToy", is_toy, "Get toyData for fit") ;
     fit->add_option("-s,--saveToy",save_toy,"save toy in root file");
     fit->add_option("-n,--fitName",fit_name,"name of this fit(useful to save results)")->required(true);
-	fit->add_option("-a,--acc",acc_file,"name of acc file");
+    fit->add_option("--r1-Mass",rho1450_MASS,"rho 1450 Mass (default= 1.466 GeV)");
+    fit->add_option("--r1-Width",rho1450_WIDTH,"rho 1450 Width (default= 0.4 GeV)");
+    fit->add_option("--r2-Mass",rho1700_MASS,"rho 1700 Mass (default= 1.720 GeV)");
+    fit->add_option("--r2-Width",rho1700_WIDTH,"rho 1700 Width (default= 0.25 GeV)");
+    fit->add_option("-a,--acc",acc_file,"name of acc file");
    
     size_t Nevents=1000000;
     std::string toyName = "MC.root";
