@@ -585,7 +585,7 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
     dplotter.Plot("s_{#pi^{-} #pi^{+}}","s_{#pi^{-} #pi^{+}}","s_{#pi^{+} #pi^{+}}",fmt::format("Fit/{0}",name.c_str()),*data);
    
     //Calc chi2
-    dplotter.chi2(npar,"D2PPP_DpAdpBinning.txt",0.05,1.95,0.3,3.4,*data,fmt::format("Fit/{0}",name.c_str())); 
+    //dplotter.chi2(npar,"D2PPP_DpAdpBinning.txt",0.05,1.95,0.3,3.4,*data,fmt::format("Fit/{0}",name.c_str())); 
     
     //saving s-wave qmpiwa
     size_t N = HH_bin_limits.size();
