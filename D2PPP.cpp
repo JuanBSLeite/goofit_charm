@@ -54,11 +54,11 @@
 	using namespace GooFit;
 	using namespace ROOT;
 
-	double rho1450_MASS   = 1.465 ;
-	double rho1450_WIDTH  = 0.4 ;
+	double rho1450_MASS   = 1.491 ;
+	double rho1450_WIDTH  = 0.28 ;
 
-	double rho1700_MASS   = 1.720 ;
-	double rho1700_WIDTH  = 0.25 ;
+	double rho1700_MASS   = 1.76 ;
+	double rho1700_WIDTH  = 0.4 ;
 
 
 	//Initial and final states parameters
@@ -407,7 +407,7 @@
 	    auto f2_1270 = new Resonances::RBW("f2",v_f2_1270_real,v_f2_1270_img,v_f2_1270_Mass,v_f2_1270_Width,2,PAIR_12,true,false);
 	    auto BEC   = new Resonances::BoseEinstein("be",be_real,be_imag,be_coef,be_delta);*/
 	    //MIPWA
-	    ResonancePdf *MIPWA = loadPWAResonance(pwa_file, false);
+	    ResonancePdf *MIPWA = loadPWAResonance(pwa_file, true);
 
 	    //If you want include a resonance in your model, just push into the vector 'vec_resonances'
 	    std::vector<ResonancePdf *> vec_resonances;
