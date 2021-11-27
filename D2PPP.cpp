@@ -318,6 +318,12 @@
 	    double f2_1270_WIDTH    = 0.1851;
 	    double f2_1270_amp      = 1.;
 	    double f2_1270_img    = 0.;
+
+		 //From PDG 2020 - ABLIKIM
+	    double f2_1525_MASS     = 1.5174;
+	    double f2_1525_WIDTH    = 0.086;
+	    double f2_1525_amp      = 1.;
+	    double f2_1525_img    = 0.;
 	    
 	    // Setting fit parameters
 	    // Variable(name,value) for fixed parameters
@@ -355,6 +361,11 @@
 	    Variable v_f2_1270_Width("f2_1270_WIDTH",f2_1270_WIDTH);
 	    Variable v_f2_1270_real("f2_1270_REAL",f2_1270_amp);
 	    Variable v_f2_1270_img("f2_1270_IMAG",f2_1270_img);
+
+		Variable v_f2_1525_Mass("f2_1525_MASS",f2_1525_MASS);
+	    Variable v_f2_1525_Width("f2_1525_WIDTH",f2_1525_WIDTH);
+	    Variable v_f2_1525_real("f2_1525_REAL",f2_1525_amp,0.01,0,0);
+	    Variable v_f2_1525_img("f2_1525_IMAG",f2_1525_img,0.01,0,0);
 
 	    //S-wave
 	    //f0(980)
@@ -397,6 +408,7 @@
 	    auto rho1450 = new Resonances::GS("rho1450",v_rho1450_real,v_rho1450_img,v_rho1450_Mass,v_rho1450_Width,1,PAIR_12,true,true);
 	    auto rho1700 = new Resonances::GS("rho1700",v_rho1700_real,v_rho1700_img,v_rho1700_Mass,v_rho1700_Width,1,PAIR_12,true,true);    
 	    auto f2_1270 = new Resonances::RBW("f2",v_f2_1270_real,v_f2_1270_img,v_f2_1270_Mass,v_f2_1270_Width,2,PAIR_12,true,true);
+		auto f2_1525 = new Resonances::RBW("f2",v_f2_1525_real,v_f2_1525_img,v_f2_1525_Mass,v_f2_1525_Width,2,PAIR_12,true,true);
 	    auto BEC   = new Resonances::BoseEinstein("be",be_real,be_imag,be_coef,be_delta);
 	    
 	   /* 
@@ -417,6 +429,7 @@
 	    vec_resonances.push_back(rho1450);
 	    vec_resonances.push_back(rho1700);
 	    vec_resonances.push_back(f2_1270);
+		vec_resonances.push_back(f2_1525);
 	    //vec_resonances.push_back(BEC);
 	    vec_resonances.push_back(MIPWA);
 
