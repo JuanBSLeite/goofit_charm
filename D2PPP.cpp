@@ -391,7 +391,7 @@
 	    //e.g. v_omega_real.setRandomValue(-0.0160 - 5*0.0009,-0.0160 + 5*0.0009)
 	   
 	    //Instatiation of resonances
-	    
+	    auto VoigOmega = new Resonances::VoigtianAmp("VoigOmega",v_omega_real,v_omega_img,v_omega_Mass,Variable("sigma",0.0023),v_omega_Width,1,PAIR_12,true,true);
 	    auto omega = new Resonances::RBW("omega",v_omega_real,v_omega_img,v_omega_Mass,v_omega_Width,1,PAIR_12,true,true);
 	    auto rho770 = new Resonances::GS("rho770",v_rho770_real,v_rho770_img,v_rho770_Mass,v_rho770_Width,1,PAIR_12,true,true);
 	    auto rho1450 = new Resonances::GS("rho1450",v_rho1450_real,v_rho1450_img,v_rho1450_Mass,v_rho1450_Width,1,PAIR_12,true,true);
@@ -412,7 +412,7 @@
 	    //If you want include a resonance in your model, just push into the vector 'vec_resonances'
 	    std::vector<ResonancePdf *> vec_resonances;
 	   
-	    vec_resonances.push_back(omega); 
+	    vec_resonances.push_back(VoigOmega); 
 	    vec_resonances.push_back(rho770); 
 	    vec_resonances.push_back(rho1450);
 	    vec_resonances.push_back(rho1700);
