@@ -78,7 +78,7 @@
 	Variable Daughter3_Mass("Daughter3_Mass",d3_MASS);
 
 	//Bins for grid normalization
-	const int bins = 1000;
+	const int bins = 500;
 
 	//N Bins for eff and bkg scanning
 	const int bins_eff_bkg = 3000;
@@ -318,6 +318,11 @@
 	    double f2_1270_WIDTH    = 0.1851;
 	    double f2_1270_amp      = 1.;
 	    double f2_1270_img    = 0.;
+
+		double f2p_1525_MASS     = 1.5174;
+	    double f2p_1525_WIDTH    = 0.086;
+	    double f2p_1525_amp      = 1.;
+	    double f2p_1525_img    = 0.;
 	    
 	    // Setting fit parameters
 	    // Variable(name,value) for fixed parameters
@@ -356,6 +361,13 @@
 	    Variable v_f2_1270_real("f2_1270_REAL",f2_1270_amp);
 	    Variable v_f2_1270_img("f2_1270_IMAG",f2_1270_img);
 
+
+		//f2(1525) 
+	    Variable v_f2p_1525_Mass("f2p_1525_MASS",f2p_1525_MASS);
+	    Variable v_f2p_1525_Width("f2p_1525_WIDTH",f2p_1525_WIDTH);
+	    Variable v_f2p_1525_real("f2p_1525_REAL",f2p_1525_amp,0.01,0,0);
+	    Variable v_f2p_1525_img("f2p_1525_IMAG",f2p_1525_img,0.01,0,0);
+
 	    //S-wave
 	    //f0(980)
 	    Variable v_f0_980_Mass("f0_980_MASS",f0_980_MASS);
@@ -382,10 +394,10 @@
 
 	v_rho770_Mass.setFixed(true);
 	v_rho770_Width.setFixed(true);
-	v_rho1450_Mass.setFixed(true);
-	v_rho1450_Width.setFixed(true);
-	v_rho1700_Mass.setFixed(true);
-	v_rho1700_Width.setFixed(true);
+	//v_rho1450_Mass.setFixed(true);
+	//v_rho1450_Width.setFixed(true);
+	//v_rho1700_Mass.setFixed(true);
+	//v_rho1700_Width.setFixed(true);
 
 	    //it is possible to initial variables above with random values in a range
 	    //e.g. v_omega_real.setRandomValue(-0.0160 - 5*0.0009,-0.0160 + 5*0.0009)
@@ -394,9 +406,10 @@
 	    auto VoigOmega = new Resonances::VoigtianAmp("VoigOmega",v_omega_real,v_omega_img,v_omega_Mass,Variable("sigma",0.0023),v_omega_Width,1,PAIR_12,true,true);
 	    auto omega = new Resonances::RBW("omega",v_omega_real,v_omega_img,v_omega_Mass,v_omega_Width,1,PAIR_12,true,true);
 	    auto rho770 = new Resonances::GS("rho770",v_rho770_real,v_rho770_img,v_rho770_Mass,v_rho770_Width,1,PAIR_12,true,true);
-	    auto rho1450 = new Resonances::GS("rho1450",v_rho1450_real,v_rho1450_img,v_rho1450_Mass,v_rho1450_Width,1,PAIR_12,true,true);
-	    auto rho1700 = new Resonances::GS("rho1700",v_rho1700_real,v_rho1700_img,v_rho1700_Mass,v_rho1700_Width,1,PAIR_12,true,true);    
+	    auto rho1450 = new Resonances::RBW("rho1450",v_rho1450_real,v_rho1450_img,v_rho1450_Mass,v_rho1450_Width,1,PAIR_12,true,true);
+	    auto rho1700 = new Resonances::RBW("rho1700",v_rho1700_real,v_rho1700_img,v_rho1700_Mass,v_rho1700_Width,1,PAIR_12,true,true);    
 	    auto f2_1270 = new Resonances::RBW("f2",v_f2_1270_real,v_f2_1270_img,v_f2_1270_Mass,v_f2_1270_Width,2,PAIR_12,true,true);
+		auto f2p_1525 = new Resonances::RBW("f2p",v_f2p_1525_real,v_f2p_1525_img,v_f2p_1525_Mass,v_f2p_1525_Width,2,PAIR_12,true,true);
 	    auto BEC   = new Resonances::BoseEinstein("be",be_real,be_imag,be_coef,be_delta);
 	    
 	   /* 
@@ -417,6 +430,7 @@
 	    vec_resonances.push_back(rho1450);
 	    vec_resonances.push_back(rho1700);
 	    vec_resonances.push_back(f2_1270);
+		vec_resonances.push_back(f2p_1525);
 	    //vec_resonances.push_back(BEC);
 	    vec_resonances.push_back(MIPWA);
 
@@ -707,7 +721,7 @@ int main(int argc, char **argv){
     auto efficiency = makeHistogramPdf(efffile,effhist,s12,s13,true,false,false);
     auto background = makeHistogramPdf(bkgfile,bkghist,s12,s13,false,false,false);
     auto signal = makesignalpdf(s12, s13, eventNumber,efficiency); 
-    AddPdf *prodpdf = new AddPdf("prodpdf", Variable("frac",0.95),signal, background) ;
+    AddPdf *prodpdf = new AddPdf("prodpdf", Variable("frac",0.9503),signal, background) ; //0.9503095,0.0002516134
     //readFromFile(prodpdf,"Fit/model1-parent/fit_results.txt");
 
     if(*makeToy) {
