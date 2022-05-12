@@ -126,8 +126,8 @@
 		   HH_bin_limits.push_back(e1*e1); //MIPWA first input
 
 		   if(!polar){
-			    emag = e2*cos(e3);
-				ephs = e2*sin(e3);
+			    emag = e2;
+				ephs = e3;
 				//Instantiation of fit parameters for MIPWA
 				Variable va(fmt::format("pwa_coef_{}_real", i), emag,0.01,-100.0,+100.0);
 				Variable vp(fmt::format("pwa_coef_{}_imag", i), ephs,0.01,-100.0,+100.0);
@@ -284,46 +284,46 @@
 	    //from PDG 2020
 	    double omega_MASS   = 0.78265;
 	    double omega_WIDTH  = 0.00849;
-	    double omega_amp    = -0.0173295;
-	    double omega_img  = 0.00528296;
+	    double omega_amp    = -0.0135;
+	    double omega_img  = -0.0379;
 
 	    //From PDG 2020 CHARGED ONLY, HADROPRODUCED
-	    double rho770_MASS   = 0.77549;
+	    double rho770_MASS   = 0.77526;
 	    double rho770_WIDTH  = 0.1491;
-	    double rho770_amp    = 0.0215937;
-	    double rho770_img  =  0.131332;
+	    double rho770_amp    = 0.0217;
+	    double rho770_img  =  0.1199;
 	    double rho770_MASS_lower    = rho770_MASS - 2*0.01;
 	    double rho770_MASS_upper  =  rho770_MASS + 2*0.01;
 	    double rho770_WIDTH_lower    = rho770_WIDTH - 2*0.06;
 	    double rho770_WIDTH_upper  =  rho770_WIDTH + 2*0.06;
 
 	    //From PDG 2020
-	    double rho1450_amp    = -0.304873;
-	    double rho1450_img  =  -1.09686;
+	    double rho1450_amp    = -0.573;
+	    double rho1450_img  =  -1.139;
 	    double rho1450_MASS_lower    = 0.0;//rho1450_MASS - 5*0.025;
 	    double rho1450_MASS_upper  =  0.0;//1.8;//rho1450_MASS + 5*0.025;
 	    double rho1450_WIDTH_lower    = 0.0;//rho1450_WIDTH - 5*0.06;
 	    double rho1450_WIDTH_upper  =  0.0;//rho1450_WIDTH + 5*0.06;
 
 	    //From PDG 2020 
-	    double rho1700_amp    = 0.590158;
-	    double rho1700_img  = -1.12964;
+	    double rho1700_amp    = 0.449;
+	    double rho1700_img  = -0.743;
 	    double rho1700_MASS_lower    = 0.0;//1.4;//rho1700_MASS - 5*0.02;
 	    double rho1700_MASS_upper  =  0.0;//2.0;//rho1700_MASS + 5*0.02;
 	    double rho1700_WIDTH_lower    = 0.0;//rho1700_WIDTH - 1*0.1;
 	    double rho1700_WIDTH_upper  =  0.0;//rho1700_WIDTH + 5*0.1;
 
 	    //From PDG 2020 - ABLIKIM
-	    double f2_1270_MASS     = 1.2751;
-	    double f2_1270_WIDTH    = 0.1851;
+	    double f2_1270_MASS     = 1.2755;
+	    double f2_1270_WIDTH    = 0.1867;
 	    double f2_1270_amp      = 1.;
 	    double f2_1270_img    = 0.;
 
 		 //From PDG 2020 - ABLIKIM
 	    double f2_1525_MASS     = 1.5174;
 	    double f2_1525_WIDTH    = 0.086;
-	    double f2_1525_amp      = 1.;
-	    double f2_1525_img    = 0.;
+	    double f2_1525_amp      = -0.1117;
+	    double f2_1525_img    = 0.0019;
 	    
 	    // Setting fit parameters
 	    // Variable(name,value) for fixed parameters
@@ -402,11 +402,11 @@
 	    //e.g. v_omega_real.setRandomValue(-0.0160 - 5*0.0009,-0.0160 + 5*0.0009)
 	   
 	    //Instatiation of resonances
-	    
+	    auto VoigOmega = new Resonances::VoigtianAmp("VoigOmega",v_omega_real,v_omega_img,v_omega_Mass,Variable("sigma",0.0023),v_omega_Width,1,PAIR_12,true,true);
 	    auto omega = new Resonances::RBW("omega",v_omega_real,v_omega_img,v_omega_Mass,v_omega_Width,1,PAIR_12,true,true);
 	    auto rho770 = new Resonances::GS("rho770",v_rho770_real,v_rho770_img,v_rho770_Mass,v_rho770_Width,1,PAIR_12,true,true);
-	    auto rho1450 = new Resonances::GS("rho1450",v_rho1450_real,v_rho1450_img,v_rho1450_Mass,v_rho1450_Width,1,PAIR_12,true,true);
-	    auto rho1700 = new Resonances::GS("rho1700",v_rho1700_real,v_rho1700_img,v_rho1700_Mass,v_rho1700_Width,1,PAIR_12,true,true);    
+	    auto rho1450 = new Resonances::RBW("rho1450",v_rho1450_real,v_rho1450_img,v_rho1450_Mass,v_rho1450_Width,1,PAIR_12,true,true);
+	    auto rho1700 = new Resonances::RBW("rho1700",v_rho1700_real,v_rho1700_img,v_rho1700_Mass,v_rho1700_Width,1,PAIR_12,true,true);    
 	    auto f2_1270 = new Resonances::RBW("f2",v_f2_1270_real,v_f2_1270_img,v_f2_1270_Mass,v_f2_1270_Width,2,PAIR_12,true,true);
 		auto f2_1525 = new Resonances::RBW("f2",v_f2_1525_real,v_f2_1525_img,v_f2_1525_Mass,v_f2_1525_Width,2,PAIR_12,true,true);
 	    auto BEC   = new Resonances::BoseEinstein("be",be_real,be_imag,be_coef,be_delta);
@@ -424,7 +424,7 @@
 	    //If you want include a resonance in your model, just push into the vector 'vec_resonances'
 	    std::vector<ResonancePdf *> vec_resonances;
 	   
-	    vec_resonances.push_back(omega); 
+	    vec_resonances.push_back(VoigOmega); 
 	    vec_resonances.push_back(rho770); 
 	    vec_resonances.push_back(rho1450);
 	    vec_resonances.push_back(rho1700);
@@ -541,7 +541,19 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
     
     //run the fit
     auto func_min = datapdf.fit();
-    datapdf.printParams(fmt::format("Fit/{0}/fit_result_mag_phase.txt",name.c_str()));
+
+	
+
+	signal->getParameterByName("rho1450_MASS")->setFixed(false);
+	signal->getParameterByName("rho1450_WIDTH")->setFixed(false);
+	signal->getParameterByName("rho1700_MASS")->setFixed(false);
+	signal->getParameterByName("rho1700_WIDTH")->setFixed(false);
+
+	FitManager datapdf2(totalPdf);
+
+	func_min = datapdf2.fit();
+
+    datapdf2.printParams(fmt::format("Fit/{0}/fit_result_mag_phase.txt",name.c_str()));
 
     auto output = fmt::format("Fit/{0}/fit_result.txt",name.c_str());
     writeToFile(totalPdf, output.c_str());
@@ -552,7 +564,7 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
     open.close();
 
     size_t npar = 0; 
-    auto param = datapdf.getParams()->Parameters();
+    auto param = datapdf2.getParams()->Parameters();
     for(size_t i = 0; i < param.size(); i++){
         if(!param[i].IsConst()){
             npar++;	
@@ -720,7 +732,7 @@ int main(int argc, char **argv){
     auto efficiency = makeHistogramPdf(efffile,effhist,s12,s13,true,false,false);
     auto background = makeHistogramPdf(bkgfile,bkghist,s12,s13,false,false,false);
     auto signal = makesignalpdf(s12, s13, eventNumber,efficiency); 
-    AddPdf *prodpdf = new AddPdf("prodpdf", Variable("frac",0.95),signal, background) ;
+    AddPdf *prodpdf = new AddPdf("prodpdf", Variable("frac",0.9503),signal, background) ;
     //readFromFile(prodpdf,"Fit/model1-parent/fit_results.txt");
 
     if(*makeToy) {
