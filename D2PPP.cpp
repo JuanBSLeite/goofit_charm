@@ -101,7 +101,7 @@
 	vector<fptype> HH_bin_limits; // bins over s_pipi spectrum
 	vector<Variable> pwa_coefs_amp; // mag(real)_coefs
 	vector<Variable> pwa_coefs_phs; // phase(imag)_coefs
-	const string pwa_file = "files/pwa_coefs.txt";//"files/PWACOEFS_50pts.txt"; // input points for MIPWA
+	const string pwa_file = "files/pwa_coefs_50_Nominal.txt";//"files/PWACOEFS_50pts.txt"; // input points for MIPWA
 
 	const int NevG = 1e7; 
 
@@ -126,11 +126,11 @@
 		   HH_bin_limits.push_back(e1*e1); //MIPWA first input
 
 		   if(!polar){
-			    emag = e2;
-				ephs = e3;
+			    emag = e2*cos(e3);
+				ephs = e2*sin(e3);
 				//Instantiation of fit parameters for MIPWA
-				Variable va(fmt::format("pwa_coef_{}_real", i), emag,0.01,-100.0,+100.0);
-				Variable vp(fmt::format("pwa_coef_{}_imag", i), ephs,0.01,-100.0,+100.0);
+				Variable va(fmt::format("pwa_coef_{}_real", i), emag,0.01,0,0);
+				Variable vp(fmt::format("pwa_coef_{}_imag", i), ephs,0.01,0,0);
 				pwa_coefs_amp.push_back(va);
 				pwa_coefs_phs.push_back(vp);
 		    }else{
@@ -542,18 +542,7 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
     //run the fit
     auto func_min = datapdf.fit();
 
-	
-
-	signal->getParameterByName("rho1450_MASS")->setFixed(false);
-	signal->getParameterByName("rho1450_WIDTH")->setFixed(false);
-	signal->getParameterByName("rho1700_MASS")->setFixed(false);
-	signal->getParameterByName("rho1700_WIDTH")->setFixed(false);
-
-	FitManager datapdf2(totalPdf);
-
-	func_min = datapdf2.fit();
-
-    datapdf2.printParams(fmt::format("Fit/{0}/fit_result_mag_phase.txt",name.c_str()));
+    datapdf.printParams(fmt::format("Fit/{0}/fit_result_mag_phase.txt",name.c_str()));
 
     auto output = fmt::format("Fit/{0}/fit_result.txt",name.c_str());
     writeToFile(totalPdf, output.c_str());
@@ -564,7 +553,7 @@ DalitzPlotPdf* runFit(GooPdf *totalPdf,DalitzPlotPdf *signal, UnbinnedDataSet *d
     open.close();
 
     size_t npar = 0; 
-    auto param = datapdf2.getParams()->Parameters();
+    auto param = datapdf.getParams()->Parameters();
     for(size_t i = 0; i < param.size(); i++){
         if(!param[i].IsConst()){
             npar++;	
