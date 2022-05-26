@@ -410,6 +410,10 @@
 	    auto f2_1270 = new Resonances::RBW("f2",v_f2_1270_real,v_f2_1270_img,v_f2_1270_Mass,v_f2_1270_Width,2,PAIR_12,true,true);
 		auto f2_1525 = new Resonances::RBW("f2",v_f2_1525_real,v_f2_1525_img,v_f2_1525_Mass,v_f2_1525_Width,2,PAIR_12,true,true);
 	    auto BEC   = new Resonances::BoseEinstein("be",be_real,be_imag,be_coef,be_delta);
+
+		auto Mix = new Resonances::RHOOMEGAMIX("Mix",Variable("Mix_real",1.,0.01,0,0),Variable("Mix_imag",0.,0.01,0,0),
+			Variable("Mix_mag",1.,0.01,0.,10.),Variable("Mix_phs",0.,0.01,0,0),Variable("Mix_Delta",0.00215,0.001,0,0),
+			1,PAIR_12,true);
 	    
 	   /* 
 	    auto omega = new Resonances::RBW("omega",v_omega_real,v_omega_img,v_omega_Mass,v_omega_Width,1,PAIR_12,true,false);
@@ -423,18 +427,19 @@
 
 	    //If you want include a resonance in your model, just push into the vector 'vec_resonances'
 	    std::vector<ResonancePdf *> vec_resonances;
-	   
+	    //vec_resonances.push_back(Mix); 
 	    vec_resonances.push_back(VoigOmega); 
 	    vec_resonances.push_back(rho770); 
 	    vec_resonances.push_back(rho1450);
 	    vec_resonances.push_back(rho1700);
 	    vec_resonances.push_back(f2_1270);
 		vec_resonances.push_back(f2_1525);
-	    //vec_resonances.push_back(BEC);
+	    vec_resonances.push_back(BEC);
 	    vec_resonances.push_back(MIPWA);
 
 	    //not included
 	    //vec_resonances.push_back(f0_980);
+		
 
 	    dtoppp.resonances = vec_resonances;
 
