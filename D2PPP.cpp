@@ -126,8 +126,8 @@
 		   HH_bin_limits.push_back(e1*e1); //MIPWA first input
 
 		   if(!polar){
-			    emag = e2*cos(e3);
-				ephs = e2*sin(e3);
+			    emag = e2;
+				ephs = e3;
 				//Instantiation of fit parameters for MIPWA
 				Variable va(fmt::format("pwa_coef_{}_real", i), emag,0.01,0,0);
 				Variable vp(fmt::format("pwa_coef_{}_imag", i), ephs,0.01,0,0);
@@ -284,30 +284,30 @@
 	    //from PDG 2020
 	    double omega_MASS   = 0.78265;
 	    double omega_WIDTH  = 0.00849;
-	    double omega_amp    = -0.0135;
-	    double omega_img  = -0.0379;
+	    double omega_amp    = -0.0135814;
+	    double omega_img  = -0.0376319;
 
 	    //From PDG 2020 CHARGED ONLY, HADROPRODUCED
 	    double rho770_MASS   = 0.77526;
 	    double rho770_WIDTH  = 0.1491;
-	    double rho770_amp    = 0.0217;
-	    double rho770_img  =  0.1199;
+	    double rho770_amp    = 0.0221831;
+	    double rho770_img  =  0.118067;
 	    double rho770_MASS_lower    = rho770_MASS - 2*0.01;
 	    double rho770_MASS_upper  =  rho770_MASS + 2*0.01;
 	    double rho770_WIDTH_lower    = rho770_WIDTH - 2*0.06;
 	    double rho770_WIDTH_upper  =  rho770_WIDTH + 2*0.06;
 
 	    //From PDG 2020
-	    double rho1450_amp    = -0.573;
-	    double rho1450_img  =  -1.139;
+	    double rho1450_amp    = -0.543768;
+	    double rho1450_img  =  -1.1551;
 	    double rho1450_MASS_lower    = 0.0;//rho1450_MASS - 5*0.025;
 	    double rho1450_MASS_upper  =  0.0;//1.8;//rho1450_MASS + 5*0.025;
 	    double rho1450_WIDTH_lower    = 0.0;//rho1450_WIDTH - 5*0.06;
 	    double rho1450_WIDTH_upper  =  0.0;//rho1450_WIDTH + 5*0.06;
 
 	    //From PDG 2020 
-	    double rho1700_amp    = 0.449;
-	    double rho1700_img  = -0.743;
+	    double rho1700_amp    = 0.425185;
+	    double rho1700_img  = -0.762422;
 	    double rho1700_MASS_lower    = 0.0;//1.4;//rho1700_MASS - 5*0.02;
 	    double rho1700_MASS_upper  =  0.0;//2.0;//rho1700_MASS + 5*0.02;
 	    double rho1700_WIDTH_lower    = 0.0;//rho1700_WIDTH - 1*0.1;
@@ -322,8 +322,8 @@
 		 //From PDG 2020 - ABLIKIM
 	    double f2_1525_MASS     = 1.5174;
 	    double f2_1525_WIDTH    = 0.086;
-	    double f2_1525_amp      = -0.1117;
-	    double f2_1525_img    = 0.0019;
+	    double f2_1525_amp      = -0.109719;
+	    double f2_1525_img    = 0.00356126;
 	    
 	    // Setting fit parameters
 	    // Variable(name,value) for fixed parameters
@@ -434,7 +434,7 @@
 	    vec_resonances.push_back(rho1700);
 	    vec_resonances.push_back(f2_1270);
 		vec_resonances.push_back(f2_1525);
-	    vec_resonances.push_back(BEC);
+	//    vec_resonances.push_back(BEC);
 	    vec_resonances.push_back(MIPWA);
 
 	    //not included
